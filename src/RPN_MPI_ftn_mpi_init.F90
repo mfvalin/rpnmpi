@@ -26,10 +26,10 @@ subroutine MPI_Init_thread(required, available, ierr)
   return
 end subroutine MPI_Init_thread
 !===================================================================
-subroutine rpn_comm_mpi_thread_provided(what)  ! make provided version available
+subroutine rpn_mpi_mpi_thread_provided(what)  ! make provided version available
   use ftn_mpi_init                             ! information available
   implicit none
   integer, intent(OUT) :: what
   what = provided
-end subroutine rpn_comm_mpi_thread_provided
+end subroutine rpn_mpi_mpi_thread_provided
 !===================================================================

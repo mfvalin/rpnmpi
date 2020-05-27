@@ -17,6 +17,6 @@ int MPI_Init(int *argc, char ***argv){
   status = PMPI_Init_thread(argc, argv, MPI_THREAD_SERIALIZED, &available);
   return status;
 }
-void rpn_comm_mpi_c_thread_provided(int *provided){
+void rpn_mpi_mpi_c_thread_provided(int *provided){
   *provided = available;
 }

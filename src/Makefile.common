@@ -8,19 +8,19 @@
 .f90.o:
 	$(MPIF90C) -I$(VPATH) -c $(OPENMP) $(FCFLAGS) $<
 .F90.o:
-	$(MPIF90C) $(shell $(VPATH)/../tools/mk.preprocess_options $< -I$(VPATH) -c $(OPENMP) $(FCFLAGS) -DMARKER=RPN_COMM_marker_$(RPN_COMM_version))
+	$(MPIF90C) $(shell $(VPATH)/../tools/mk.preprocess_options $< -I$(VPATH) -c $(OPENMP) $(FCFLAGS) -DMARKER=RPN_MPI_marker_$(RPN_MPI_version))
 .c.o:
 	$(MPICC) -I$(VPATH) -c $(CFLAGS) $<
 .o.Abs:
 	echo program P_$(basename $<) > test.f90 ; \
-	echo call rpn_comm_$(basename $<) >> test.f90 ; \
+	echo call rpn_mpi_$(basename $<) >> test.f90 ; \
 	echo stop >>test.f90 ;
 	echo end >>test.f90 ; \
 	$(MPIF90C) $(OPENMP) $(FCFLAGS) -o $@ test.f90 $< -L$(LIBDIR) -l$(LIBNAME) $(MPI_SERIAL_LIB) -lnuma ; \
 	cat test.f90 ; rm -f test.f90
 .o.Abs-serial:
 	echo program P_$(basename $<) > test.f90 ; \
-	echo call rpn_comm_$(basename $<) >> test.f90 ; \
+	echo call rpn_mpi_$(basename $<) >> test.f90 ; \
 	echo stop >>test.f90 ;
 	echo end >>test.f90 ; \
 	$(MPIF90C) $(OPENMP) $(FCFLAGS) -o $@ test.f90 $< -L$(LIBDIR) -l$(LIBNAME) $(MPI_SERIAL_LIB) -lnuma; \
