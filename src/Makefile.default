@@ -1,0 +1,27 @@
+$(info using default setup)
+# this is for vanilla gcc/gfortran/mpicc/mpif90 to be adjusted on target system
+
+ifeq (,$(MY_ARCH))
+# gcc/gfortran setup, MY_ARCH not defined
+CFLAGS  = -fpic -O2
+FCFLAGS = -fpic -fno-second-underscore -fcray-pointer -O2
+CC      = gcc
+FC      = gfortran
+F90C    = gfortran
+MPICC   = mpicc
+MPIFC   = mpif90
+MPIF90C = mpif90
+else
+# custom user setup, MY_ARCH is defined
+CFLAGS  = $(MY_CFLAGS)
+FCFLAGS = $(MY_FCFLAGS)
+CC      = $(MY_CC)
+FC      = $(MY_F90C)
+F90C    = $(MY_F90C)
+MPICC   = $(MY_MPICC)
+MPIFC   = $(MY_MPIF90C)
+MPIF90C = $(MY_MPIF90C)
+endif
+
+# end of vanilla gcc/gfortran/mpicc/mpif90 defaults
+
