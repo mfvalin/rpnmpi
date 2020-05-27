@@ -418,7 +418,7 @@ if(pe_me == 0) print *,'application split done'
 	      call Userinit(WORLD_pe(1),WORLD_pe(2))
 	      if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
 		ok = .false.
-		write(rpn_u,*) 'ERROR: (RPN_MPI_init_io) Inconsistency between'
+		write(rpn_u,*) 'ERROR: (RPN_MPI_init) Inconsistency between'
 		write(rpn_u,*) '       userinit Subroutine and total number of PEs'
 		write(rpn_u,*) '       please double check topology'
 	      endif
@@ -427,12 +427,12 @@ if(pe_me == 0) print *,'application split done'
 		write(rpn_u,*)'      Grid will use ',pe_dommtot,' processes'
 	      endif
           else ! ( Pex.ne.0 .and. Pey.ne.0  )
-	      write(rpn_u,*) 'INFO: (RPN_MPI_init_io) Forced topology :',Pex,' by',Pey
+	      write(rpn_u,*) 'INFO: (RPN_MPI_init) Forced topology :',Pex,' by',Pey
 	      WORLD_pe(1) = Pex
 	      WORLD_pe(2) = Pey
 	      if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
 		ok = .false.
-		write(rpn_u,*) 'ERROR: (RPN_MPI_init_io) Inconsistency between Pex, Pey and total number of PEs'
+		write(rpn_u,*) 'ERROR: (RPN_MPI_init) Inconsistency between Pex, Pey and total number of PEs'
 		write(rpn_u,*) '       please double check topology'
 	      endif
 	      if(diag_mode.ge.1) then
@@ -518,7 +518,7 @@ print *,'pe_tot =',pe_tot
      &     WORLD_COMM_MPI, ierr)
       if( pe_me_all_domains .eq. 0 .and. diag_mode .ge.3) then
         write(rpn_u,*)'                         FULL PE MAP'
-        write(rpn_u,*)'    mex     mey   me(g)    grid  me(sg)   sgrid   me(d)  domain host   numa'
+        write(rpn_u,*)'    mex     mey   me(g)    grid  me(sg)   sgrid   me(d)  application appid     host   numa'
         do j=0,pe_tot_all_domains-1
            appid5 = '     '
            reste = pe_location(8,j)

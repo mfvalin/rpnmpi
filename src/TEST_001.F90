@@ -1,12 +1,12 @@
 #if defined(TEST)
 program my_test
 call mpi_init(ierr)
-call rpn_mpi_test_014
+call rpn_mpi_test_001
 call mpi_finalize(ierr)
 stop
 end
 #endif
-subroutine rpn_mpi_test_014
+subroutine rpn_mpi_test_001
   use ISO_C_BINDING
   implicit none
   include 'mpif.h'
@@ -67,7 +67,7 @@ subroutine rpn_mpi_test_014
   print *,"ERROR in arguments",ierr
   go to 777
   return
-end subroutine rpn_mpi_test_014
+end subroutine rpn_mpi_test_001
 
 subroutine Userinit
   return
