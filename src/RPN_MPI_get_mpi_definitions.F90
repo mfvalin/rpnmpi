@@ -115,25 +115,11 @@ subroutine RPN_MPI_reset_mpi_layout()
   use RPN_MPI_mpi_layout
   implicit none
   include 'mpif.h'
-  interface
-    function get_host_id() result(h) bind(C,name='gethostid')
-      import :: C_LONG
-      integer(C_LONG) :: h
-    end function get_host_id
-    function numa_node(cpu) result(n) bind(C,name='numa_node_of_cpu')
-      import :: C_INT
-      integer(C_INT), intent(IN), value :: cpu
-      integer(C_INT) :: n
-    end function 
-    function get_my_cpu() result(c) bind(C,name='sched_getcpu')
-      import :: C_INT
-      integer(C_INT) :: c
-    end function get_my_cpu
-  end interface
+  include 'RPN_MPI_system_interfaces.inc'
   integer :: cpu
 
   ml%host = get_host_id()              ! get linux host id
-  cpu = get_my_cpu()                   ! get logical cpu number
+  cpu = sched_get_my_cpu()             ! get logical cpu number
   ml%numa = numa_node(cpu)             ! get numa space number for this cpu
   ml%colors = [-1, -1, -1]
 
@@ -186,30 +172,5 @@ subroutine RPN_MPI_get_mpi_layout(what, ierr) ! get a copy on RPN_MPI internal m
   what%comm%sgrd%column    = MPI_COMM_NULL   ! and neither is column
   what%rank%sgrd%column    = -1
   what%size%sgrd%column    = -1
-!   what%comm%appl%all       = ml%comm%appl%all
-!   what%comm%appl%same_node = ml%comm%appl%same_node
-!   what%comm%appl%same_numa = ml%comm%appl%same_numa
-! 
-!   what%comm%sgrd%all       = ml%comm%sgrd%all
-!   what%comm%sgrd%compute   = ml%comm%sgrd%compute
-!   what%comm%sgrd%service   = ml%comm%sgrd%service
-!   what%comm%sgrd%same_node = ml%comm%sgrd%same_node
-!   what%comm%sgrd%same_numa = ml%comm%sgrd%same_numa
-!   what%comm%sgrd%node_peer = ml%comm%sgrd%node_peer
-!   what%comm%sgrd%numa_peer = ml%comm%sgrd%numa_peer
-!   what%comm%sgrd%grid_peer = ml%comm%sgrd%grid_peer
-!   what%comm%sgrd%row       = MPI_COMM_NULL
-!   what%comm%sgrd%column    = MPI_COMM_NULL
-! 
-!   what%comm%grid%all       = ml%comm%grid%all
-!   what%comm%grid%compute   = ml%comm%grid%compute
-!   what%comm%grid%service   = ml%comm%grid%service
-!   what%comm%grid%same_node = ml%comm%grid%same_node
-!   what%comm%grid%same_numa = ml%comm%grid%same_numa
-!   what%comm%sgrd%node_peer = ml%comm%grid%node_peer
-!   what%comm%grid%numa_peer = ml%comm%grid%numa_peer
-!   what%comm%grid%grid_peer = ml%comm%grid%grid_peer
-!   what%comm%grid%row       = ml%comm%grid%row
-!   what%comm%grid%column    = ml%comm%grid%column
   return
 end subroutine RPN_MPI_get_mpi_layout

@@ -56,12 +56,7 @@
 !!
 !       this is also intended to be a cleanup/refactoring of RPN_MPI_init_multi_level
 !
-      interface
-	function gethostid() result(id) BIND(C,name='gethostid')
-	  import :: C_LONG
-	  integer(C_LONG) :: id
-	end function gethostid
-      end interface
+      include 'RPN_MPI_system_interfaces.inc'
       integer ierr, i, j, count, npe, reste, nslots, key, status, core
       integer :: pe_type    ! 0 = compute, 1 = service
       integer :: service
@@ -91,7 +86,7 @@
       enddo
       call RPN_MPI_reset_mpi_layout   ! initialize NEW style layout structure
       call RPN_MPI_get_core_and_numa(core, ml%numa)  ! get numa space for this PE
-      ml%host = gethostid()
+      ml%host = get_host_id()
       compute = Io / 10         ! number of compute PEs in a PE block (compute + service PEs)
       service = mod(Io, 10)     ! number of service(IO) PEs in a PE block
 !     initialize OLD style variables

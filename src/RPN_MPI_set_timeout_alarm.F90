@@ -22,15 +22,7 @@
       implicit none
       integer, intent(IN) :: seconds  !InTf!
       integer :: seconds_since  !InTf!
-
-      interface
-      function c_alarm(seconds) result(seconds_since) BIND(C,name='alarm')
-        use ISO_C_BINDING
-        implicit none
-        integer(C_INT), intent(IN), value :: seconds
-        integer(C_INT) :: seconds_since
-      end function c_alarm
-      end interface
+      include 'RPN_MPI_system_interfaces.inc'
 
       seconds_since = c_alarm(seconds)
 !      print *,'alarm set to ',seconds,' seconds'
