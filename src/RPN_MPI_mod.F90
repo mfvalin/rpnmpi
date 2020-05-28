@@ -22,6 +22,32 @@ module rpn_mpi
   implicit none
   include 'mpif.h'
   save
+!       ---------------------------------------------------------------------
+!       the following block is used by rpn_comm and rpn_mpi 
+!       ---------------------------------------------------------------------
+!
+! control variables
+!
+  integer, target :: WORLD_COMM_MPI                ! plays the role of MPI_COMM_WORLD for rpn_mpi
+  integer :: diag_mode
+  logical :: WORLD_COMM_MPI_INIT=.false.
+  logical :: RPN_MPI_IS_INITIALIZED=.false.
+  integer :: deltai=1   ! deltai and deltaj are used by rpn_mpi_petopo to distribute grid over PEs
+  integer :: deltaj=1   ! default PE distribution is X increasing, then Y increasing
+!
+! Output file unit
+!
+  integer :: rpn_u = 6
+!
+!	GLOBAL information, will be BROADCAST
+!
+!	WORLD_pe(1) number of PEs along x in grid
+!	WORLD_pe(2) number of PEs along y in grid
+!	WORLD_pe(3) deltai, size of PE blocks along x
+!	WORLD_pe(4) deltaj, size of PE blocks along Y
+!	WORLD_pe(5:10) provision for future expansion
+!
+  integer WORLD_pe(10)
 !
 !	domain boundary flags, LOGICAL
 !	.true. if a PE(TILE) is on a domain edge
@@ -30,6 +56,9 @@ module rpn_mpi
 !
 	logical bnd_east,bnd_west,bnd_north,bnd_south
 !
+!       ---------------------------------------------------------------------
+!       the following block is used by rpn_comm, 
+!       ---------------------------------------------------------------------
 !	characteristics of the local PE
 !	plus some PE grid topology information
 !	normally set by routine rpn_mpi_init
@@ -51,19 +80,8 @@ module rpn_mpi
 !       pe_blocmaster communicator for bloc_corner PEs in grid
 !	pe_id	 matrix of PE numbers in grid
 !		 pe_me=pe_id(pe_mex,pe_mey)
-!	pe_optn  table of options ( option name)
-!	pe_opiv  values of integer options
-!	pe_oprv  values of real options
-!	pe_opcv  values of character options
 !
-!       WORLD_COMM_MPI  replaces MPI_COMM_WORLD
 !
-  integer, target :: WORLD_COMM_MPI                         ! plays the role of MPI_COMM_WORLD for rpn_mpi
-  integer :: diag_mode
-  logical :: WORLD_COMM_MPI_INIT=.false.
-  logical :: RPN_MPI_IS_INITIALIZED=.false.
-  integer :: deltai=1   ! deltai and deltaj are used by rpn_mpi_petopo to distribute grid over PEs
-  integer :: deltaj=1   ! default PE distribution is X increasing, then Y increasing
   integer :: pe_me,pe_mex,pe_mey,pe_myrow,pe_mycol
   integer :: pe_tot,pe_nx,pe_ny,pe_pe0,pe_extra
   integer :: pe_gr_extra,pe_gr_myrow,pe_gr_mycol
@@ -95,6 +113,14 @@ module rpn_mpi
   logical :: full_async_exch=.false.  ! fully asynchronous halo exchange (level 2)
   logical :: rpn_ew_ext_l = .false.   ! extended halo option (haloy extra rows on North and South tiles)
 
+!       ---------------------------------------------------------------------
+!       options
+!       ---------------------------------------------------------------------
+!
+!	pe_optn  table of options ( option name)
+!	pe_opiv  values of integer options
+!	pe_oprv  values of real options
+!	pe_opcv  values of character options
 !   integer, parameter :: MAX_OPTN=10
 !   character *4 pe_optn(MAX_OPTN)
 !   integer :: pe_opiv(MAX_OPTN)
@@ -110,25 +136,11 @@ module rpn_mpi
   integer ord_max
   integer, allocatable, dimension(:) :: ord_tab
 !
-!	GLOBAL information, will be BROADCAST
-!
-!	WORLD_pe(1) number of PEs along x in grid
-!	WORLD_pe(2) number of PEs along y in grid
-!	WORLD_pe(3) deltai, size of PE blocks along x
-!	WORLD_pe(4) deltaj, size of PE blocks along Y
-!	WORLD_pe(5:10) provision for future expansion
-!
-  integer WORLD_pe(10)
-!
-!       Subgrid information
+!       Subgrid information (blocks)
 !
   logical BLOC_EXIST
   integer BLOC_SIZEX,BLOC_SIZEY, BLOC_MASTER
   integer BLOC_mybloc,BLOC_myblocx,BLOC_myblocy
   integer BLOC_me,BLOC_corner
   integer BLOC_comm_world, bloc_comm_row, bloc_comm_col
-!
-! Output unit information
-!
-  integer :: rpn_u = 6
 end module rpn_mpi

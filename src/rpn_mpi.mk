@@ -36,14 +36,16 @@ DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI.inc $(VPATH)/RPN
                $(VPATH)/RPN_MPI_mpi_layout.inc $(VPATH)/RPN_MPI_mpi_symbols.inc \
                $(VPATH)/RPN_MPI_mpi_definitions.inc
 
-lib: $(LIBRARY)
+ITF = $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI_interfaces_int.inc
+
+lib: itf $(LIBRARY)
 
 # OBJECTS comes from dependencies.mk
 obj: $(OBJECTS)
 
-all:  itf inc lib tests
+all:   itf inc lib tests
 
-full:  itf dep $(LIBRARY) $(TESTS) $(STUB_LIBRARY) $(LIBRARY).inc
+full:  itf $(LIBRARY) $(TESTS) $(STUB_LIBRARY) $(LIBRARY).inc
 
 tests:	$(TESTS)
 
@@ -85,13 +87,12 @@ $(VPATH)/dependencies.mk:
 	rm -f $(VPATH)/dependencies.mk $(TMPDIR)/dependencies+.mk
 	(cd $(VPATH) ; ../tools/rdedep.pl --flat_layout --out=$(TMPDIR)/dependencies+.mk $$(ls -1 RPN_MPI* | grep -v TEST_0)) || true
 	mv $(TMPDIR)/dependencies+.mk $(VPATH)/dependencies.mk
-	echo === touch  $(VPATH)/dependencies.mk ===
 	touch  $(VPATH)/dependencies.mk
 #
 dep_rm:
 	rm -f $(VPATH)/dependencies.mk
 
-dep: dep_rm $(VPATH)/dependencies.mk 
+dep: $(VPATH)/dependencies.mk
 
 ssm-package:
 	rm -rf $(VPATH)/rpn-comm_${RPN_MPI_version_s}_multi
