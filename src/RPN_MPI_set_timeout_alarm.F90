@@ -25,6 +25,16 @@
       include 'RPN_MPI_system_interfaces.inc'
 
       seconds_since = c_alarm(seconds)
-!      print *,'alarm set to ',seconds,' seconds'
       return
       end function RPN_MPI_set_timeout_alarm                             !InTf!
+!     legacy function for rpn_comm
+      function RPN_COMM_set_timeout_alarm(seconds) result(seconds_since)  !InTf!
+      use ISO_C_BINDING
+      implicit none
+      integer, intent(IN) :: seconds  !InTf!
+      integer :: seconds_since  !InTf!
+      include 'RPN_MPI_system_interfaces.inc'
+
+      seconds_since = c_alarm(seconds)
+      return
+      end function RPN_COMM_set_timeout_alarm                             !InTf!

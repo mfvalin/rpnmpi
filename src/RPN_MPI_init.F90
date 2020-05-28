@@ -18,6 +18,9 @@
 ! ! Boston, MA 02111-1307, USA.
 ! !/
 !===================================================================
+!     legacy variables from module rpn_comm are initialized to provide
+!     compatibility with rpn_comm_init family
+!===================================================================
 !InTf!
 !
 ! multiple levels initialization function application/supergrid/grid/block
@@ -79,6 +82,9 @@
       integer :: ApplID
       character(len=5) :: appid5
 !
+!      if(RPN_COMM_IS_INITIALIZED .or. RPN_MPI_IS_INITIALIZED) then ! ignore with warning message or abort ?
+!      endif
+!
 !     build application (domain) "color" from first 5 (at most) characters of AppID
       ApplID = 0
       do i = 1, min(5 , len(AppID))    ! 6 bits per character ASCII 32-96, case insensitive
@@ -102,7 +108,8 @@
       pe_grid=MPI_COMM_NULL
       pe_me_grid=-1
 !
-      RPN_MPI_IS_INITIALIZED=.true.
+      RPN_MPI_IS_INITIALIZED  =.true.
+      RPN_COMM_IS_INITIALIZED =.true.      ! legacy to maintain compatibility with RPN_COMM_init family
       if( .not. WORLD_COMM_MPI_INIT ) then ! world not set before, use MPI_COMM_WORLD
            WORLD_COMM_MPI_INIT=.true.
            WORLD_COMM_MPI=MPI_COMM_WORLD

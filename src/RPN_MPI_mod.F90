@@ -32,6 +32,7 @@ module rpn_mpi_comm_0
   integer :: diag_mode
   logical :: WORLD_COMM_MPI_INIT=.false.
   logical :: RPN_MPI_IS_INITIALIZED=.false.
+  logical :: RPN_COMM_IS_INITIALIZED=.false.
   integer :: deltai=1   ! deltai and deltaj are used by rpn_mpi_petopo to distribute grid over PEs
   integer :: deltaj=1   ! default PE distribution is X increasing, then Y increasing
 !

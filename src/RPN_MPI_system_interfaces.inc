@@ -16,9 +16,12 @@ interface
     integer(C_INT) :: c
   end function sched_get_my_cpu
   function c_alarm(seconds) result(seconds_since) BIND(C,name='alarm')
-    use ISO_C_BINDING
-    implicit none
+    import :: C_INT
     integer(C_INT), intent(IN), value :: seconds
     integer(C_INT) :: seconds_since
   end function c_alarm
+  subroutine RPN_COMM_chdir(path) BIND(C,name='chdir')
+    import :: C_CHAR
+    character(C_CHAR), dimension(*), intent(IN) :: path
+  end subroutine RPN_COMM_chdir
 end interface

@@ -155,6 +155,15 @@
 
       return
       end subroutine RPN_MPI_set_petopo                  !InTf!
+!
+!     legacy function for use by rpn_comm routines
+!
+      integer function RPN_COMM_petopo(pex,pey)          !InTf!
+      integer, intent(IN) :: pex,pey                     !InTf!
+      integer, external :: RPN_MPI_petopo
+      RPN_COMM_petopo = RPN_MPI_petopo()
+      return
+      end function RPN_COMM_petopo                       !InTf!
 !InTf!
       integer function RPN_MPI_petopo(pex,pey)          !InTf!
       use RPN_MPI

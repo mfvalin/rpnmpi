@@ -57,8 +57,12 @@ subroutine rpn_mpi_test_101
     endif
   enddo
 
-  if(rank >= pop/2) AppID = "<N02>"
-  ierr = RPN_MPI_init(Userinit,Pelocal,Petotal,Pex,Pey,Multigrids,Grids,AppID,Io)
+  if(Io >= 0) then
+    if(rank >= pop/2) AppID = "<N02>"
+    ierr = RPN_MPI_init(Userinit,Pelocal,Petotal,Pex,Pey,Multigrids,Grids,AppID,Io)
+  else
+    ierr = RPN_COMM_init_multi_level(Userinit,Pelocal,Petotal,Pex,Pey,Multigrids,Grids)
+  endif
 
 777 continue
   call RPN_MPI_finalize(ierr)

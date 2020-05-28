@@ -31,3 +31,10 @@
 	enddo
       return
       end function RPN_MPI_get_a_free_unit                         !InTf!
+!     legacy routine for rpn_comm routines
+      integer function RPN_COMM_get_a_free_unit()                   !InTf!
+      implicit none
+      integer, external :: RPN_MPI_get_a_free_unit
+      RPN_COMM_get_a_free_unit = RPN_MPI_get_a_free_unit()
+      return
+      end function RPN_COMM_get_a_free_unit                         !InTf!

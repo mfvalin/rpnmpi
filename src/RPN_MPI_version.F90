@@ -24,6 +24,13 @@
       include 'RPN_MPI_version.inc'
       return
       end
+!     legacy function for rpn_comm routines
+      integer function RPN_COMM_version()
+      implicit none
+      integer, external :: RPN_MPI_version
+      RPN_COMM_version = RPN_MPI_version()
+      return
+      end
       subroutine MARKER
       return
       end subroutine MARKER

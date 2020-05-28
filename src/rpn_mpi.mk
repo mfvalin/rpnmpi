@@ -17,7 +17,7 @@ CLEAN    = RPN_MPI_fortran_stubs.F90 RPN_MPI_c_stubs.c mpi_stub.h \
 CLEANDIRS= $(VPATH)/rpn-comm_$(RPN_MPI_version_s)_multi $(LIBDIR)
 
 # build list of test programs and generate list of .Abs to build
-TESTS    = $(shell ls $(VPATH)/TEST_0*.[fF]90 | sed -e 's:.*/::' -e 's/[fF]90/Abs/g' | xargs)
+TESTS    = $(shell ls $(VPATH)/TEST_*.[fF]90 | sed -e 's:.*/::' -e 's/[fF]90/Abs/g' | xargs)
 
 FMODULES = RPN_MPI_mod.o
 ifeq "$(SERIAL)" ""
@@ -74,14 +74,14 @@ itf: $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI_interfaces_int.inc
 $(VPATH)/RPN_MPI_ptr.F90: $(VPATH)/../tools/gen_RPN_MPI_ptr.sh
 	(cd $(VPATH) ; ../tools/gen_RPN_MPI_ptr.sh >$(VPATH)/RPN_MPI_ptr.F90)
 
-$(VPATH)/RPN_MPI_interfaces.inc: $(wildcard $(VPATH)/RPN_MPI*.?90) $(wildcard $(VPATH)/*.c)
+$(VPATH)/RPN_MPI_interfaces.inc: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPATH)/RPN_*.c)
 	(cd $(VPATH) ; \
-	cat RPN_MPI_*.?90 | grep '!InTfX!' | sed 's/^!![ ]*/      /' >RPN_MPI_interfaces.inc )
+	cat RPN_*.?90 | grep '!InTfX!' | sed 's/^!![ ]*/      /' >RPN_MPI_interfaces.inc )
 	(cd $(VPATH) ; \
-	cat RPN_MPI_*.?90 RPN_MPI_*.c | ../tools/extract_interface.sh >>RPN_MPI_interfaces.inc ; \
+	cat RPN_*.?90 RPN_*.c | ../tools/extract_interface.sh >>RPN_MPI_interfaces.inc ; \
 	rm -f ../tools/wrap_code.exe)
 
-$(VPATH)/RPN_MPI_interfaces_int.inc: $(wildcard $(VPATH)/RPN_MPI*.?90) $(wildcard $(VPATH)/RPN_MPI*.c)
+$(VPATH)/RPN_MPI_interfaces_int.inc: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPATH)/RPN_*.c)
 	(cd $(VPATH) ; rm -f RPN_MPI_interfaces_int.inc;)
 	(cd $(VPATH) ; \
 	for target in RPN_MPI_*.?90; \
@@ -97,7 +97,7 @@ $(VPATH)/RPN_MPI_interfaces_int.inc: $(wildcard $(VPATH)/RPN_MPI*.?90) $(wildcar
 # (re)build dependencies using perl script rdedep.pl
 $(VPATH)/dependencies.mk:
 	rm -f $(VPATH)/dependencies.mk $(TMPDIR)/dependencies+.mk
-	(cd $(VPATH) ; ../tools/rdedep.pl --flat_layout --out=$(TMPDIR)/dependencies+.mk $$(ls -1 RPN_MPI* | grep -v TEST_0)) || true
+	(cd $(VPATH) ; ../tools/rdedep.pl --flat_layout --out=$(TMPDIR)/dependencies+.mk $$(ls -1 RPN_* | grep -v TEST_)) || true
 	mv $(TMPDIR)/dependencies+.mk $(VPATH)/dependencies.mk
 	touch  $(VPATH)/dependencies.mk
 #
@@ -128,7 +128,7 @@ $(STUB_LIBRARY): RPN_MPI_fortran_stubs.o RPN_MPI_c_stubs.o
 # build static library and sorted list of objects in library, create link thst includes MPI_VERSION in name
 $(LIBRARY): $(OBJECTS)
 	mkdir -p $(LIBDIR)
-	ar rcv $(LIBRARY)_ RPN_MPI*.o
+	ar rcv $(LIBRARY)_ RPN_*.o
 	mv $(LIBRARY)_ $(LIBRARY)
 	ar t $(LIBRARY) | sort -u >$(VPATH)/objects.lst
 	(cd $(LIBDIR) ; ln -sf lib$(LIBNAME).a  lib$(LIB)$(MPI_VERSION).a)
