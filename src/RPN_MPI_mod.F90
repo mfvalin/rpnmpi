@@ -1,5 +1,5 @@
 !/* rpn_mpi - Library of useful routines for C and FORTRAN programming
-! * Copyright (C) 1975-2012  Division de Recherche en Prevision Numerique
+! * Copyright (C) 1975-2020  Division de Recherche en Prevision Numerique
 ! *                          Environnement Canada
 ! *
 ! * This library is free software; you can redistribute it and/or
@@ -17,18 +17,18 @@
 ! * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ! * Boston, MA 02111-1307, USA.
 ! */
-module rpn_mpi
+module rpn_mpi_comm_0
   use iso_c_binding
   implicit none
   include 'mpif.h'
   save
 !       ---------------------------------------------------------------------
-!       the following block is used by rpn_comm and rpn_mpi 
+!       this module is used by rpn_comm and rpn_mpi 
 !       ---------------------------------------------------------------------
 !
 ! control variables
 !
-  integer, target :: WORLD_COMM_MPI                ! plays the role of MPI_COMM_WORLD for rpn_mpi
+  integer, target :: WORLD_COMM_MPI=MPI_COMM_WORLD                ! plays the role of MPI_COMM_WORLD for rpn_mpi
   integer :: diag_mode
   logical :: WORLD_COMM_MPI_INIT=.false.
   logical :: RPN_MPI_IS_INITIALIZED=.false.
@@ -49,6 +49,15 @@ module rpn_mpi
 !
   integer WORLD_pe(10)
 !
+!   logical :: async_exch=.true.        ! asynchronous halo exchange (level 1)
+  logical :: full_async_exch=.false.  ! fully asynchronous halo exchange (level 2)
+  logical :: rpn_ew_ext_l = .false.   ! extended halo option (haloy extra rows on North and South tiles)
+end module rpn_mpi_comm_0
+
+module rpn_mpi_comm_1
+  use iso_c_binding
+  implicit none
+!
 !	domain boundary flags, LOGICAL
 !	.true. if a PE(TILE) is on a domain edge
 !	all 4 values .true. if single tile
@@ -57,7 +66,8 @@ module rpn_mpi
 	logical bnd_east,bnd_west,bnd_north,bnd_south
 !
 !       ---------------------------------------------------------------------
-!       the following block is used by rpn_comm, 
+!       the following block is used mainly by rpn_comm,
+!       but is filled by rpn_mpi for legacy support
 !       ---------------------------------------------------------------------
 !	characteristics of the local PE
 !	plus some PE grid topology information
@@ -109,10 +119,13 @@ module rpn_mpi
   integer, allocatable, dimension(:)   :: pe_xtab,pe_ytab  ! O(pe_xtab(pe_nx)) O(pe_ytab(pe_ny)) 
   integer, allocatable, dimension(:,:) :: pe_location   ! pe_x,pe_x,pe_ingrid,pe_insgrid,pe_indomain pe_location(8,total_nb_of_pes)
 !
-!   logical :: async_exch=.true.        ! asynchronous halo exchange (level 1)
-  logical :: full_async_exch=.false.  ! fully asynchronous halo exchange (level 2)
-  logical :: rpn_ew_ext_l = .false.   ! extended halo option (haloy extra rows on North and South tiles)
+  integer ord_max
+  integer, allocatable, dimension(:) :: ord_tab
+end module rpn_mpi_comm_1
 
+module rpn_mpi_comm_2
+  use iso_c_binding
+  implicit none
 !       ---------------------------------------------------------------------
 !       options
 !       ---------------------------------------------------------------------
@@ -121,20 +134,22 @@ module rpn_mpi
 !	pe_opiv  values of integer options
 !	pe_oprv  values of real options
 !	pe_opcv  values of character options
-!   integer, parameter :: MAX_OPTN=10
-!   character *4 pe_optn(MAX_OPTN)
-!   integer :: pe_opiv(MAX_OPTN)
-!   real *4 pe_oprv(MAX_OPTN)
-!   character *4 pe_opcv(MAX_OPTN)
-!   integer, private :: RESTE
-!   parameter (RESTE=MAX_OPTN-1)
-!   data pe_optn/'FILL',RESTE*'    '/
-!   data pe_opcv/MAX_OPTN*'    '/
-!   data pe_oprv/MAX_OPTN*0.0/
-!   data pe_opiv/MAX_OPTN*0/
+  integer, parameter :: MAX_OPTN=10
+  character *4 pe_optn(MAX_OPTN)
+  integer :: pe_opiv(MAX_OPTN)
+  real *4 pe_oprv(MAX_OPTN)
+  character *4 pe_opcv(MAX_OPTN)
+  integer, private :: RESTE
+  parameter (RESTE=MAX_OPTN-1)
+  data pe_optn/'FILL',RESTE*'    '/
+  data pe_opcv/MAX_OPTN*'    '/
+  data pe_oprv/MAX_OPTN*0.0/
+  data pe_opiv/MAX_OPTN*0/
+end module rpn_mpi_comm_2
 
-  integer ord_max
-  integer, allocatable, dimension(:) :: ord_tab
+module rpn_mpi_comm_3
+  use iso_c_binding
+  implicit none
 !
 !       Subgrid information (blocks)
 !
@@ -143,4 +158,4 @@ module rpn_mpi
   integer BLOC_mybloc,BLOC_myblocx,BLOC_myblocy
   integer BLOC_me,BLOC_corner
   integer BLOC_comm_world, bloc_comm_row, bloc_comm_col
-end module rpn_mpi
+end module rpn_mpi_comm_3
