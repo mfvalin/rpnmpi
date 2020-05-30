@@ -19,8 +19,8 @@
 ! */
 module rpn_mpi_comm_0
   use iso_c_binding
+  use rpn_mpi_mpif
   implicit none
-  include 'mpif.h'
   save
 !       ---------------------------------------------------------------------
 !       this module is used by rpn_comm and rpn_mpi 
@@ -160,3 +160,78 @@ module rpn_mpi_comm_3
   integer BLOC_me,BLOC_corner
   integer BLOC_comm_world, bloc_comm_row, bloc_comm_col
 end module rpn_mpi_comm_3
+
+!       ---------------------------------------------------------------------
+!       this module is used by rpn_comm
+!       ---------------------------------------------------------------------
+module rpn_mpi_comm_4
+  use iso_c_binding
+  use rpn_mpi_mpif
+  implicit none
+  include 'RPN_COMM_constants.inc'
+!
+!  symbol tables
+!
+  type :: SYMTAB
+    integer :: number
+    character (len=32) :: string
+  end type
+!
+  type(SYMTAB), dimension(6) :: &  ! miscellaneous symbols
+  misc_tab=(/ &
+  SYMTAB(MPI_ANY_SOURCE,RPN_COMM_ANY_SOURCE), &
+  SYMTAB(MPI_ANY_TAG,RPN_COMM_ANY_TAG), &
+  SYMTAB(MPI_COMM_NULL,RPN_COMM_COMM_NULL), &
+  SYMTAB(MPI_GROUP_NULL,RPN_COMM_GROUP_NULL), &
+  SYMTAB(MPI_COMM_WORLD,RPN_COMM_COMM_WORLD), &
+  SYMTAB(MPI_SUCCESS,RPN_COMM_SUCCESS)  &
+  /)
+  type(SYMTAB), dimension(25) :: &  ! data types
+  type_tab=(/ &
+  SYMTAB(MPI_BYTE,RPN_COMM_BYTE),  &
+  SYMTAB(MPI_PACKED,RPN_COMM_PACKED),  &
+  SYMTAB(MPI_UB,RPN_COMM_UB),  &
+  SYMTAB(MPI_LB,RPN_COMM_LB),  &
+  SYMTAB(MPI_CHARACTER,RPN_COMM_CHARACTER),  &
+  SYMTAB(MPI_LOGICAL,RPN_COMM_LOGICAL),  &
+  SYMTAB(MPI_INTEGER,RPN_COMM_INTEGER),  &
+  SYMTAB(MPI_INTEGER1,RPN_COMM_INTEGER1),  &
+  SYMTAB(MPI_INTEGER2,RPN_COMM_INTEGER2),  &
+  SYMTAB(MPI_INTEGER4,RPN_COMM_INTEGER4),  &
+  SYMTAB(MPI_INTEGER8,RPN_COMM_INTEGER8),  &
+!        SYMTAB(MPI_INTEGER16,RPN_COMM_INTEGER16),  &
+  SYMTAB(MPI_DATATYPE_NULL,RPN_COMM_DATATYPE_NULL), &
+  SYMTAB(MPI_REAL,RPN_COMM_REAL),  &
+  SYMTAB(MPI_REAL4,RPN_COMM_REAL4),  &
+  SYMTAB(MPI_REAL8,RPN_COMM_REAL8),  &
+  SYMTAB(MPI_REAL16,RPN_COMM_REAL16),  &
+  SYMTAB(MPI_DOUBLE_PRECISION,RPN_COMM_DOUBLE_PRECISION),  &
+  SYMTAB(MPI_COMPLEX,RPN_COMM_COMPLEX),  &
+  SYMTAB(MPI_COMPLEX8,RPN_COMM_COMPLEX8),  &
+  SYMTAB(MPI_COMPLEX16,RPN_COMM_COMPLEX16),  &
+  SYMTAB(MPI_COMPLEX32,RPN_COMM_COMPLEX32),  &
+  SYMTAB(MPI_DOUBLE_COMPLEX,RPN_COMM_DOUBLE_COMPLEX),  &
+  SYMTAB(MPI_2REAL,RPN_COMM_2REAL),  &
+  SYMTAB(MPI_2DOUBLE_PRECISION,RPN_COMM_2DOUBLE_PRECISION),  &
+  SYMTAB(MPI_2INTEGER,RPN_COMM_2INTEGER)  &
+!        SYMTAB(MPI_2COMPLEX,RPN_COMM_2COMPLEX),  &
+!        SYMTAB(MPI_2DOUBLE_COMPLEX,RPN_COMM_2DOUBLE_COMPLEX),  &
+  /)
+  type(SYMTAB), dimension(14) :: &  ! operation types
+  op_tab=(/ &
+  SYMTAB(MPI_MAX,RPN_COMM_MAX),  &
+  SYMTAB(MPI_MIN,RPN_COMM_MIN),  &
+  SYMTAB(MPI_SUM,RPN_COMM_SUM),  &
+  SYMTAB(MPI_PROD,RPN_COMM_PROD),  &
+  SYMTAB(MPI_LAND,RPN_COMM_LAND),  &
+  SYMTAB(MPI_BAND,RPN_COMM_BAND),  &
+  SYMTAB(MPI_LOR,RPN_COMM_LOR),  &
+  SYMTAB(MPI_BOR,RPN_COMM_BOR),  &
+  SYMTAB(MPI_LXOR,RPN_COMM_LXOR),  &
+  SYMTAB(MPI_BXOR,RPN_COMM_BXOR),  &
+  SYMTAB(MPI_MAXLOC,RPN_COMM_MAXLOC),  &
+  SYMTAB(MPI_MINLOC,RPN_COMM_MINLOC),  &
+  SYMTAB(MPI_OP_NULL,RPN_COMM_OP_NULL), &
+  SYMTAB(MPI_REPLACE,RPN_COMM_REPLACE)  &
+  /)
+end module rpn_mpi_comm_4

@@ -75,8 +75,6 @@
 !	positions are calculated from 0 (ORIGIN 0)
 !!
 !
-!	include 'rpn_comm.h'
-!	include 'mpif.h'
       include 'RPN_MPI_system_interfaces.inc'
 !
       integer ierr, i, j, count, npe, reste, nslots, key, status

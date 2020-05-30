@@ -28,5 +28,6 @@ module rpn_comm
   use rpn_mpi_comm_1
   use rpn_mpi_comm_2
   use rpn_mpi_comm_3
+  use rpn_mpi_comm_4
   implicit none
 end module rpn_comm

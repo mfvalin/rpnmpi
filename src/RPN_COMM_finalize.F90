@@ -21,7 +21,6 @@
       SUBROUTINE RPN_COMM_finalize(ierr) !InTf!
 
 !	Luc Corbeil, 2000-11-21
-!	mpi finalize
       use rpn_comm
       implicit none                      !InTf!
       integer, intent(OUT) ::  ierr      !InTf!
