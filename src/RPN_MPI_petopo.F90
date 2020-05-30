@@ -19,6 +19,14 @@
 ! */
 !
 !InTf!
+      ! legacy entry point foir rpn_comm
+      subroutine RPN_COMM_set_petopo(sizx,sizy)          !InTf!
+      use RPN_MPI
+      implicit none                      !InTf!
+      integer, intent(IN) :: sizx,sizy   !InTf!
+      call RPN_MPI_set_petopo(sizx,sizy)
+      end subroutine RPN_COMM_set_petopo                 !InTf!
+
       subroutine RPN_MPI_set_petopo(sizx,sizy)           !InTf!
 !     set PE block topology
 !     assemble PEs in blocks of sizx by sizy tiles
@@ -147,7 +155,6 @@
 
       use RPN_MPI
       implicit none                      !InTf!
-!      include 'mpif.h'
       integer, intent(IN) :: sizx,sizy   !InTf!
 
       deltai = sizx
@@ -161,14 +168,13 @@
       integer function RPN_COMM_petopo(pex,pey)          !InTf!
       integer, intent(IN) :: pex,pey                     !InTf!
       integer, external :: RPN_MPI_petopo
-      RPN_COMM_petopo = RPN_MPI_petopo()
+      RPN_COMM_petopo = RPN_MPI_petopo(pex,pey)
       return
       end function RPN_COMM_petopo                       !InTf!
 !InTf!
       integer function RPN_MPI_petopo(pex,pey)          !InTf!
       use RPN_MPI
       implicit none                                      !InTf!
-!      include 'mpif.h'
       integer, intent(IN) :: pex,pey                     !InTf!
 
       integer count, ierr,i,j,i0,j0
