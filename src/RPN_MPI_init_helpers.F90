@@ -25,7 +25,7 @@
       ! provide call_back routine to get domain information
       subroutine RPN_MPI_mydomain (call_back, mydomain)             !InTf!
       use rpn_mpi
-      implicit none                                                  !InTf!
+      implicit none
       external :: call_back                                          !InTf!
       integer, intent(OUT) :: mydomain                               !InTf!
 !
@@ -63,7 +63,7 @@
 !     legacy routine for rpn_comm
       subroutine RPN_COMM_mydomain (call_back, mydomain)             !InTf!
       use rpn_comm
-      implicit none                                                  !InTf!
+      implicit none
       external :: call_back                                          !InTf!
       integer, intent(OUT) :: mydomain                               !InTf!
       call RPN_MPI_mydomain (call_back, mydomain)
@@ -75,7 +75,7 @@
 !InTf!
       subroutine RPN_MPI_world_set(world_comm)                    !InTf!
       use rpn_mpi
-      implicit none                                                !InTf!
+      implicit none
       integer, intent(IN) ::  world_comm                           !InTf!
 !
       if(RPN_MPI_IS_INITIALIZED .or. RPN_COMM_IS_INITIALIZED) then  ! check legacy RPN_COMM flags
@@ -90,7 +90,7 @@
 !     legacy routine for rpn_comm
       subroutine RPN_COMM_world_set(world_comm)                    !InTf!
       use rpn_comm
-      implicit none                                                !InTf!
+      implicit none
       integer, intent(IN) ::  world_comm                           !InTf!
       call RPN_MPI_world_set(world_comm)
       return
@@ -100,7 +100,7 @@
       ! get the NUMA space number for the CPU this process is running on
       subroutine RPN_MPI_get_core_and_numa(core, numa)            !InTf!
       use ISO_C_BINDING
-      implicit none                                                !InTf!
+      implicit none
       integer, intent(OUT) ::  core, numa                          !InTf!
       include 'RPN_MPI_system_interfaces.inc'
 
@@ -108,3 +108,12 @@
       numa = numa_node(core)
       return
       end subroutine RPN_MPI_get_core_and_numa                    !InTf!
+!===================================================================
+      ! find if RPN_MPI_init has been called
+      function RPN_MPI_initialized() result(status)             !InTf!
+      use rpn_mpi
+      implicit none
+      logical ::  status                                        !InTf!
+      status = RPN_MPI_IS_INITIALIZED .or. RPN_COMM_IS_INITIALIZED
+      end function RPN_MPI_initialized                          !InTf!
+      

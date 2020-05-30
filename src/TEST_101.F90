@@ -15,6 +15,7 @@ subroutine rpn_mpi_test_101
   external :: Userinit
   integer :: Pelocal,Petotal,Pex,Pey,MultiGrids,Grids,Io
   character(len=128) :: AppID, string
+  logical :: initialized
 
   call MPI_Init(ierr)
   call MPI_Comm_Rank(MPI_COMM_WORLD, rank, ierr)
@@ -57,9 +58,15 @@ subroutine rpn_mpi_test_101
     endif
   enddo
 
-  if(Io >= 0) then
+  if(Io >= 0 .and. Io < 999999) then
     if(rank >= pop/2) AppID = "<N02>"
     ierr = RPN_MPI_init(Userinit,Pelocal,Petotal,Pex,Pey,Multigrids,Grids,AppID,Io)
+    initialized = RPN_MPI_initialized()
+    if(rank == 0) then
+      print *,"INFO: RPN_MPI is initialized"
+    else
+      print *,"ERROR: RPN_MPI is not initialized"
+    endif
   else
     ierr = RPN_COMM_init_multi_level(Userinit,Pelocal,Petotal,Pex,Pey,Multigrids,Grids)
   endif

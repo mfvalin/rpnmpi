@@ -82,8 +82,12 @@
       integer :: ApplID
       character(len=5) :: appid5
 !
-!      if(RPN_COMM_IS_INITIALIZED .or. RPN_MPI_IS_INITIALIZED) then ! ignore with warning message or abort ?
-!      endif
+      if(RPN_COMM_IS_INITIALIZED .or. RPN_MPI_IS_INITIALIZED) then ! ignore with warning message or abort ?
+        if(ml%rank%grid%all == 0) &
+          write(rpn_u,*) 'ERROR: RPN_MPI/RPN_COMM already initialized, ABORTING execution'
+        call mpi_finalize(ierr)
+        stop
+      endif
 !
 !     build application (domain) "color" from first 5 (at most) characters of AppID
       ApplID = 0
