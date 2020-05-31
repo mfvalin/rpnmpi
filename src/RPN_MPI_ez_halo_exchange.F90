@@ -12,17 +12,19 @@
 
 #if ! defined(SELF_TEST)
 module RPN_MPI_halo_tcache
+  implicit none
+  include 'mpif.h'
   integer, parameter :: NTS = 9
   integer(kind=8), dimension(NTS) :: ts = [0,0,0,0,0,0,0,0,0]   ! timing points
 !   logical, save :: redblack = .false.  ! if true, use fully synchronous (send, recv, no sendrecv) method
 !   logical, save :: async    = .false.  ! if true, use fully asynchronous (isend, irecv)  method
   logical, save :: barrier  = .false.  ! if true, use a barrier between E-W and N-S exchanges
   integer, save :: nhalo = 0
+  integer, save :: gridcom = MPI_COMM_NULL
+  integer, save :: rowcom  = MPI_COMM_NULL
+  integer, save :: colcom  = MPI_COMM_NULL
   integer, save :: rankx, ranky, sizex, sizey
 end module RPN_MPI_halo_tcache
-module RPN_MPI_halo_ccache
-  integer, save :: gridcom, rowcom, colcom
-end module RPN_MPI_halo_ccache
 
 function RPN_MPI_get_halo_timings(t,n) result(nt)
   use RPN_MPI_halo_tcache
@@ -35,6 +37,7 @@ function RPN_MPI_get_halo_timings(t,n) result(nt)
   if(n < NTS) return
   nt = nhalo
   t(1:NTS) = ts
+  return
 end function RPN_MPI_get_halo_timings
 
 subroutine RPN_MPI_reset_halo_timings
@@ -42,16 +45,18 @@ subroutine RPN_MPI_reset_halo_timings
   implicit none
   nhalo = 0
   ts = 0
+  return
 end subroutine RPN_MPI_reset_halo_timings
 
 subroutine RPN_MPI_print_halo_timings
-  use RPN_MPI_halo_ccache
   use RPN_MPI_halo_tcache
   implicit none
-  include 'mpif.h'
   integer(kind=8), dimension(:,:), allocatable :: allts
   integer :: ier, ntot, i
   integer(kind=8), dimension(NTS) :: tsavg, tsmax, tsmin
+
+  if(nhalo == 0) return   ! no stats collected
+
   ntot = sizex*sizey
   if(rankx == 0 .and. ranky == 0) then
     allocate(allts(NTS,ntot))
@@ -73,13 +78,13 @@ subroutine RPN_MPI_print_halo_timings
     call flush(6)
   endif
   deallocate(allts)
+  return
   
 1 format(a,10I10)
 end subroutine RPN_MPI_print_halo_timings
 
-! set communicators for halo exchange
+! set information for halo exchange timings
 subroutine RPN_MPI_ez_halo_parms(grid, row, col, mode)
-  use RPN_MPI_halo_ccache
   use RPN_MPI_halo_tcache
   implicit none
   integer, intent(IN) :: grid, row, col
@@ -99,13 +104,6 @@ subroutine RPN_MPI_ez_halo_parms(grid, row, col, mode)
   return
 end subroutine RPN_MPI_ez_halo_parms
 
-subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)
-  implicit none
-  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
-  integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
-  call RPN_MPI_ez_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
-end subroutine RPN_MPI_ez_halo_8
-
 ! RED/BLACK method, only synchronous send and recv
 !   West -> East move
 !     EVEN PEs
@@ -121,9 +119,28 @@ end subroutine RPN_MPI_ez_halo_8
 !     ODD PEs
 !                      send to even PE at West
 !       if not East PE recv from even PE at East
+subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)
+  use ISO_C_BINDING
+  use RPN_MPI_halo_tcache
+  implicit none
+  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
+  integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
+  call RPN_MPI_quick_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,rowcom,colcom)
+end subroutine RPN_MPI_ez_halo_8
+
+subroutine RPN_MPI_quick_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col)
+  use ISO_C_BINDING
+  implicit none
+  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col
+  integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
+
+  call RPN_MPI_quick_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,row,col)
+  return
+end subroutine RPN_MPI_quick_halo8
+
 subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)
   use ISO_C_BINDING
-  use RPN_MPI_halo_ccache
+  use RPN_MPI_halo_tcache
   implicit none
   integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
   integer, intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
@@ -132,12 +149,11 @@ subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)
   return
 end subroutine RPN_MPI_ez_halo
 
-subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rowcom,colcom)
+subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col)
   use ISO_C_BINDING
   use RPN_MPI_halo_tcache
   implicit none
-  include 'mpif.h'
-  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rowcom,colcom
+  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col
   integer, intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
 
   integer :: i, j, k, nw, ier
@@ -149,6 +165,14 @@ subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rowco
   integer(kind=8),dimension(10) :: t
   integer(kind=8), external :: cpu_real_time_ticks
 
+  if(row .ne. rowcom .or. col .ne. colcom) then  ! different set of row / column
+    rowcom = row
+    call MPI_Comm_rank(rowcom, rankx, ier)
+    call MPI_Comm_size(rowcom, sizex, ier)
+    colcom = col
+    call MPI_Comm_rank(colcom, ranky, ier)
+    call MPI_Comm_size(colcom, sizey, ier)
+  endif
   t = 0
   nhalo = nhalo + 1
   t(1) = cpu_real_time_ticks()
@@ -233,6 +257,7 @@ subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rowco
   ts(7) = ts(7) + t(4) - t(1)
   ts(8) = ts(8) + t(8) - t(5)
   ts(9) = t(5) - t(4)
+  return
 end subroutine RPN_MPI_quick_halo
 #endif
 #if defined(SELF_TEST)
