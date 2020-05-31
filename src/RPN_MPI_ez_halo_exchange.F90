@@ -193,7 +193,7 @@ subroutine RPN_MPI_print_halo_timings
     allocate(allts(NTS,1))
   endif
   call MPI_Gather(ts,     NTS,       MPI_INTEGER8, alltsx, NTS,       MPI_INTEGER8, 0, rowcom, ier)  ! collect along row
-  call MPI_Gather(alltsx, NTS*sizex, MPI_INTEGER8, allts,  NTS*sizex, MPI_INTEGER8, 0, colcom, ier)  ! collect all rows
+  if(rankx == 0)call MPI_Gather(alltsx, NTS*sizex, MPI_INTEGER8, allts,  NTS*sizex, MPI_INTEGER8, 0, colcom, ier)  ! collect all rows
   do i = 1, NTS
     tsavg(i) = sum(allts(i,:))
     tsmax(i) = maxval(allts(i,:))
@@ -208,6 +208,7 @@ subroutine RPN_MPI_print_halo_timings
     call flush(6)
   endif
   deallocate(allts)
+  deallocate(alltsx)
   return
   
 1 format(a,10I10)
