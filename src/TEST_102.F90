@@ -7,10 +7,11 @@
         integer ndomains, offset, err
         character (len=128) SYSTEM_COMMAND
 	SYSTEM_COMMAND="1"
-        call get_environment_variable("TEST_DOMAINS",SYSTEM_COMMAND)
+        call get_environment_variable("TEST_102",SYSTEM_COMMAND)
         if(SYSTEM_COMMAND == "" )SYSTEM_COMMAND="1"
         read(SYSTEM_COMMAND,*)ndomains
         n_domains=ndomains
+        ndomains = 1
         offset = 0
         err = 0
         return
@@ -70,15 +71,34 @@
         call RPN_COMM_mydomain (get_n_domains, mydomain,ierr)
 !
         call RPN_COMM_set_petopo(1,1000)   ! force vertically striped distribution
-        mygrid = RPN_COMM_init_multi_level(sss,Pelocal,Petotal,npex,npey,n_domains,1)
+        mygrid = RPN_COMM_init_multi_level(sss,Pelocal,Petotal,npex,npey,n_domains/100,mod(n_domains,100))
 !	============= TEST for WORLD/MULTIGRID/GRID ====================
 !
-        if(test_grids(mygrid,Pelocal) .ne. 0) goto 9999
+!         if(test_grids(mygrid,Pelocal) .ne. 0) goto 9999
+!         goto 9999
 !
 !	================= TEST for transpose ===================
 !
+!
+        istat= RPN_COMM_topo(nptsx,mini,maxi,nil,nilmax,ihalox,ni0,.TRUE.,.FALSE.)
+        if(istat.ne.0) then
+           write(*,*) 'Invalid distribution over x, abort',nptsx,npex
+           goto 9999
+        endif
+!
+        istat= RPN_COMM_topo(nptsy,minj,maxj,njl,njlmax,ihaloy,nj0,.FALSE.,.FALSE.)
+        if(istat.ne.0) then
+           write(*,*) 'Invalid distribution over y, abort',nptsy,npey
+           goto 9999
+        endif
+           allocate(data(mini:maxi,minj:maxj,nptsz*2))
+           print *, 'before setup',mini,maxi,minj,maxj,nptsz,nil,njl
+           goto 9999
            call setup_arr2(data,iarr,jarr,mini,maxi,minj,maxj,nptsz,nil,njl)
+           print *, 'after setup'
            istat =  RPN_COMM_topo(nptsz,min3,max3,nzl,nzlmzx,0,nz0,.true.,.true.)
+           print *,'after topo',istat,nptsz,min3,max3,nzl,nzlmzx
+           goto 9999
            allocate(data2((max3-min3+1),(maxj-minj+1),(nptsx+10)*2))
            if(.true.) then
              if(Pelocal.eq.0 )then
@@ -91,6 +111,7 @@
               print *,'nptsz,min3,max3,nzl,nzlmzx,nz0',                       &
      &             nptsz,min3,max3,nzl,nzlmzx,nz0
              endif
+             goto 2222
 !
              call RPN_COMM_transpose(data,mini,maxi,nptsx,(maxj-minj+1),min3,max3,nptsz,data2,1,2)
 !
@@ -255,15 +276,17 @@
         common /pernode/ nodex, nodey
         common /the_problem/ nptsx,nptsy,nptsz,ihalox,ihaloy
         integer nptsx,nptsy,nptsz,ihalox,ihaloy
-        integer deltai,deltaj
-        open(5,file='TEST_data_001',form='FORMATTED')
-        print *,'PEs =',nx*ny
-        read(5,*)nx,ny,nptsx,nptsy,nptsz,ihalox,ihaloy,deltai,deltaj,nodex,nodey
+        integer deltai,deltaj,junk
+        character(len=128) :: TEST_102
+        print *,'PEs available =',nx*ny
+        call get_environment_variable("TEST_102",TEST_102)
+        read(TEST_102,*)junk,nx,ny,nptsx,nptsy,nptsz,ihalox,ihaloy,deltai,deltaj,nodex,nodey
         print *, ' problem size is ',nptsx,' by ',nptsy,' by ',nptsz
         print *, ' halo size is ',ihalox,' by ',ihaloy
         print *, ' topology = ',nx,' by ',ny
         print *, ' PE block topology = ',deltai,' by ',deltaj
         print *, 'Node tiles = ',nodex,' by ',nodey
+        return
         call RPN_COMM_set_petopo(deltai,deltaj)
         return
         end
@@ -287,22 +310,27 @@
         call RPN_COMM_BARRIER('GRID',ierr)
         call RPN_COMM_rank( 'GRID', irank ,ierr )
         call RPN_COMM_size( 'GRID', isize ,ierr )
+!         print *,'GRID  rank = ',irank
         if(irank.eq.0)     print *,'BARRIER on GRID',mygridcomm,isize
 
         call RPN_COMM_BARRIER('MULTIGRID',ierr)
         call RPN_COMM_rank( 'MULTIGRID', irank ,ierr )
+!         print *,'SGRID rank = ',irank
         if(irank.eq.0)     print *,'BARRIER on MULTIGRID',mymultigridcomm
 
         call RPN_COMM_BARRIER('ALLGRIDS',ierr)
         call RPN_COMM_rank( 'ALLGRIDS', irank ,ierr )
+!         print *,'WORLD rank = ',irank
         if(irank.eq.0)     print *,'BARRIER on ALLGRIDS',myallgridcomm
 
         call RPN_COMM_BARRIER('WORLD',ierr)
         call RPN_COMM_rank( 'WORLD', irank ,ierr )
+!         print *,'WORLD rank = ',irank
         if(irank.eq.0)     print *,'BARRIER on WORLD',myworldcomm
 
         call RPN_COMM_BARRIER('GRIDPEERS',ierr)
         call RPN_COMM_rank( 'GRIDPEERS', irank ,ierr )
+!         print *,'PEERS rank = ',irank
         if(irank.eq.0)     print *,'BARRIER on GRIDPEERS',peercomm
 
         call RPN_COMM_size( 'GRIDPEERS', npeers ,ierr )
@@ -315,43 +343,3 @@
         test_grids = 0
 	return
 	end
-        subroutine timing_report(n,times,label)
-        implicit none
-        integer :: n
-        character (len=*) :: label
-        real, dimension(3,n) :: times
-        real tmin(3), tmax(3)
-        real *8 ttot(3), ttot2(3)
-        integer i,j
-        character (len=10) :: labels(3)
-
-        labels(1)=' PRE COPY '
-        labels(2)=' MPI CALL '
-        labels(3)=' POST COPY'
-
-!            print *,label,' N=',n
-!            print 111,'T1 ',nint(times(1,:)*1000000)
-!            print 111,'T2 ',nint(times(2,:)*1000000 - times(1,:)*1000000)
-!            print 111,'T3 ',nint(times(3,:)*1000000 - times(2,:)*1000000)
-!111         format(A,15I6)
-!        return
-        times = times * 1000000
-        ttot = 0.0
-        tmin = 1000000000.0
-        tmax = 0.0
-        do j = 1 , n
-         times(3,j) = times(3,j) - times(2,j)
-         times(2,j) = times(2,j) - times(1,j)
-         do i = 1 , 3
-          tmin(i)=min(tmin(i),times(i,j))
-          tmax(i)=max(tmax(i),times(i,j))
-          ttot(i)=ttot(i)+times(i,j)
-         enddo
-        enddo
-        ttot = ttot / n
-        do I = 1 , 3
-          print 222,label//labels(i)//' (min,max,avg) microsec',nint(tmin(i)),nint(tmax(i)),nint(ttot(i))
-        enddo
-222     format(A,3I8)
-        return
-        end
