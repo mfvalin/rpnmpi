@@ -51,7 +51,7 @@ subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,c
   integer, dimension(halox+lni+halox,haloy,nk) :: halo_from_north, halo_to_north
   integer, dimension(halox+lni+halox,haloy,nk) :: halo_from_south, halo_to_south
   integer(kind=8),dimension(10) :: t
-  integer(kind=8), external :: cpu_real_time_ticks
+!   integer(kind=8), external :: cpu_real_time_ticks
 
   if(row .ne. rowcom .or. col .ne. colcom) then  ! different set of row / column
     rowcom = row
