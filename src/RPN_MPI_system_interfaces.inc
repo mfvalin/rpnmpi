@@ -1,7 +1,8 @@
 !
-! system interfaces for RPN_MPI functions
+! system and C function interfaces for RPN_MPI functionsand subroutines
 !
 interface
+  !==================================  system functions ==================================
   function get_host_id() result(h) bind(C,name='gethostid')
     import :: C_LONG
     integer(C_LONG) :: h
@@ -24,4 +25,9 @@ interface
     import :: C_CHAR
     character(C_CHAR), dimension(*), intent(IN) :: path
   end subroutine RPN_COMM_chdir
+  !==================================  local C functions ==================================
+  function cpu_real_time_ticks() result(ticks) bind(C,name='cpu_real_time_ticks')
+    import :: C_LONG_LONG
+    integer(C_LONG_LONG) :: ticks
+  end function cpu_real_time_ticks
 end interface

@@ -25,6 +25,11 @@
 !
   integer, parameter :: RPNMPI_types_version = 1
 
+  type, BIND(C) :: rpnmpi_loc
+    integer(C_INTPTR_T) :: a
+  end type
+  type(rpnmpi_loc), parameter :: NULL_rpnmpi_loc = rpnmpi_loc(0)
+
   type, bind(C)    :: rpnmpi_context
     type(c_ptr)    :: p     ! managed by rpn_mpi routines
     integer(c_int) :: t1    ! tag1 (reserved for rpn_mpi usage)
