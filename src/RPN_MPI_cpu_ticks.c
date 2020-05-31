@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+static uint64_t time0
 #pragma weak cpu_real_time_ticks__=cpu_real_time_ticks
 #pragma weak cpu_real_time_ticks_=cpu_real_time_ticks
 uint64_t cpu_real_time_ticks__(void);
