@@ -82,3 +82,46 @@
     !
     integer :: MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE
   end type
+!
+! RPN_MPI wrappers equivalent MPI wrapped derived types (used to enforce interfaces)
+!
+  type, BIND(C) :: RPN_MPI_Comm
+    integer :: wrapped_value
+  end type RPN_MPI_Comm
+
+  type, BIND(C) :: RPN_MPI_Datatype
+    integer :: wrapped_value
+  end type RPN_MPI_Datatype
+
+  type, BIND(C) :: RPN_MPI_Errhandler
+    integer :: wrapped_value
+  end type RPN_MPI_Errhandler
+
+  type, BIND(C) :: RPN_MPI_File
+    integer :: wrapped_value
+  end type RPN_MPI_File
+
+  type, BIND(C) :: RPN_MPI_Group
+    integer :: wrapped_value
+  end type RPN_MPI_Group
+
+  type, BIND(C) :: RPN_MPI_Info
+    integer :: wrapped_value
+  end type RPN_MPI_Info
+
+  type, BIND(C) :: RPN_MPI_Message
+    integer :: wrapped_value
+  end type RPN_MPI_Message
+
+  type, BIND(C) :: RPN_MPI_Op
+    integer :: wrapped_value
+  end type RPN_MPI_Op
+
+  type, BIND(C) :: RPN_MPI_Request
+    integer :: wrapped_value
+  end type RPN_MPI_Request
+
+  type, BIND(C) :: RPN_MPI_Win
+    integer :: wrapped_value
+  end type RPN_MPI_Win
+
