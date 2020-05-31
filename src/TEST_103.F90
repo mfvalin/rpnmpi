@@ -58,7 +58,7 @@ subroutine rpn_mpi_test_103
   call MPI_comm_size(MPI_COMM_WORLD, petot, ier)
   call MPI_comm_rank(MPI_COMM_WORLD, ranktot, ier)
   if(sizex*sizey .ne. petot) goto 777
-  if(ranktot == 0) write(6,*)'redblack =',redblack
+!   if(ranktot == 0) write(6,*)'redblack =',redblack
   if(ranktot == 0) write(6,2)'sizex,sizey,NI,NJ,NK,halox,haloy=',sizex,sizey,NI,NJ,NK,halox,haloy
   if(yfirst) then
     rankx = ranktot / sizey
