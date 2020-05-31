@@ -26,7 +26,9 @@ program wrap
   end
 EOT
 #s.f90 -o ../tools/wrap_code.exe ../tools/wrap_code.f90 2>/dev/null 1>/dev/null
-gfortran -o ../tools/wrap_code.exe ../tools/wrap_code.f90 2>/dev/null 1>/dev/null
+# patch for cray systems
+which ftn 2>/dev/null 1>/dev/null && ftn -o ../tools/wrap_code.exe ../tools/wrap_code.f90 2>/dev/null 1>/dev/null
+which gfortran 2>/dev/null 1>/dev/null && gfortran -o ../tools/wrap_code.exe ../tools/wrap_code.f90 2>/dev/null 1>/dev/null
 rm -f ../tools/wrap_code.f90
 fi
 if [[ -z $1 ]] ; then
