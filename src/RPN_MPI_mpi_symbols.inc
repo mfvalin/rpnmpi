@@ -18,7 +18,7 @@
 ! ! Boston, MA 02111-1307, USA.
 ! !/
 !===================================================================
-  integer, parameter :: mpi_symbols_version = 100002 ! version 1.00.00
+  integer, parameter :: mpi_symbols_version = 100012 ! version 1.00.01
 !===================================================================
 !
 ! RPN_MPI wrappers equivalent MPI wrapped derived types (used to enforce interfaces)

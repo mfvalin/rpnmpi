@@ -8,19 +8,24 @@ subroutine rpn_mpi_test_103
   include 'mpif.h'
 ! following include need to get rpnmpi_loc
   include 'RPN_MPI.inc'
+  include 'RPN_MPI_mpi_symbols.inc'
   interface
     subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_quick_halo')
-      import :: rpnmpi_loc, C_INTPTR_T
-      integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col
+      import :: rpnmpi_loc, C_INTPTR_T, RPN_MPI_Comm
+      integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
+!       integer, intent(IN)    :: row,col
+      type(RPN_MPI_Comm), intent(IN)    :: row,col
       type(rpnmpi_loc), intent(IN), value :: g
     end subroutine RPN_MPI_quick_halo
   end interface
+  type(RPN_MPI_Comm) :: col_comm, row_comm
   type(rpnmpi_loc) :: p
   integer, parameter :: NXCH = 100
   integer :: NI, NJ, NK, halox, haloy
   integer, dimension(:,:,:), allocatable :: z
   integer :: rankx, sizex, ranky, sizey, ier, petot, ranktot, errors
-  integer :: i, j, k, offx, offy, l, m, larg1, larg2, larg3, stat1, stat2, stat3, rowcomm, colcomm
+  integer :: i, j, k, offx, offy, l, m, larg1, larg2, larg3, stat1, stat2, stat3
+  integer :: rowcomm, colcomm
   integer :: ilo, ihi, jlo, jhi
   character(len=128) :: argv1, argv2, argv3, mode
   logical :: printit, redblack, yfirst, async, barrier
@@ -88,8 +93,6 @@ subroutine rpn_mpi_test_103
   enddo
   call MPI_Barrier(MPI_COMM_WORLD,ier)
 !
-  p%a = loc(z)                             ! address of array subject to halo exchange
-!
 ! if we use
 !      include 'RPN_MPI_mpi_definitions.inc'
 !      call RPN_MPI_init(.......) 
@@ -99,7 +102,11 @@ subroutine rpn_mpi_test_103
 !      rowcomm = p%comm%grid%row
 !      colcomm = p%comm%grid%column
 !
-  call RPN_MPI_quick_halo(p,1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,rowcomm,colcomm)
+!
+  p%a = loc(z)                             ! address of array subject to halo exchange
+  row_comm = RPN_MPI_Comm(rowcomm)
+  col_comm = RPN_MPI_Comm(colcomm)
+  call RPN_MPI_quick_halo(p,1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
   call RPN_MPI_reset_halo_timings          ! ignore timings for first call
   call MPI_Barrier(MPI_COMM_WORLD,ier)     ! full sync
 
@@ -107,7 +114,7 @@ subroutine rpn_mpi_test_103
     call MPI_Barrier(MPI_COMM_WORLD,ier)
     t1 = MPI_Wtime()
     p%a = loc(z)
-    call RPN_MPI_quick_halo(p,1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,rowcomm,colcomm)
+    call RPN_MPI_quick_halo(p,1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
     txch(i) = MPI_Wtime() - t1
   enddo
   txch = txch * 1000000   ! convert into microseconds
