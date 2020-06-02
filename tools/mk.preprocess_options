@@ -6,7 +6,7 @@ get_comp_extras() {
   echo " " "$@"
 }
 export COMP_ARCH=${COMP_ARCH:-${EC_ARCH#${BASE_ARCH}/}}
-echo "COMP_ARCH=${COMP_ARCH}" 1>&2
+########echo "COMP_ARCH=${COMP_ARCH}" 1>&2
 File=${1:-/dev/null}
 shift;
 eval $(get_comp_extras "${File}" "$@")

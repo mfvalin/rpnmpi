@@ -78,13 +78,39 @@
 !       |        % row         ! block PEs in the same row (same j/y ordinal)
 !       |        % column      ! block PEs in the same column (same i/x ordinal)
 !
+!================================================================================================
+!  the _c wrapped type definitions MUST BE EQUIVALENT to their non wrapped sibling definition
+!  in order to get their contents moved from one form to the other either by lying about type
+!  or using 'transfer' for the copy.
+!  mpi_layout and mpi_layout_internal MUST have the SAME LENGTH and the SAME PHYSICAL LAYOUT
+!  internally, RPN_MPI uses the non wrapped form, but the user interfaces will be using
+!  the wrapped form
+!  communicators are wrapped, but rank and size remain plain integers
+!================================================================================================
 ! subgrids (blocks of PEs within a grid) , tentative
+  type, BIND(C) :: subgrid_c           ! wrapped type for communicators
+    type(RPN_MPI_Comm) :: all
+    type(RPN_MPI_Comm) :: row
+    type(RPN_MPI_Comm) :: column
+  end type
   type, BIND(C) :: subgrid
-    integer(C_INT) :: all              ! all PEs
+    integer(C_INT) :: all
     integer(C_INT) :: row
     integer(C_INT) :: column
   end type
 ! grids and supergrids
+  type, BIND(C) :: mpigrid_c           ! wrapped type for communicators
+    type(RPN_MPI_Comm) :: all          ! all PEs, compute and service
+    type(RPN_MPI_Comm) :: compute      ! compute PEs
+    type(RPN_MPI_Comm) :: service      ! service (Input/Output) PEs
+    type(RPN_MPI_Comm) :: same_node    ! PEs in same SMP node (compute and service)
+    type(RPN_MPI_Comm) :: same_numa    ! PEs in same numa space (compute and service)
+    type(RPN_MPI_Comm) :: node_peer    ! node to node peer (PEs with same rank in node)
+    type(RPN_MPI_Comm) :: numa_peer    ! numa space to numa space peer (PEs with same rank in numa space)
+    type(RPN_MPI_Comm) :: grid_peer    ! grid to grid / supergrid to supergrid peer (PEs with same rank in grid/supergrid)
+    type(RPN_MPI_Comm) :: row          ! undefined in a supergrid, information for a grid row
+    type(RPN_MPI_Comm) :: column       ! undefined in a supergrid, information for a grid column
+  end type
   type, BIND(C) :: mpigrid
     integer(C_INT) :: all              ! all PEs, compute and service
     integer(C_INT) :: compute          ! compute PEs
@@ -97,13 +123,27 @@
     integer(C_INT) :: row              ! undefined in a supergrid, information for a grid row
     integer(C_INT) :: column           ! undefined in a supergrid, information for a grid column
   end type
+  
 ! applications (domains) and world (less information than grids and supergrids)
+  type, BIND(C) :: application_c       ! wrapped type for communicators
+    type(RPN_MPI_Comm) :: all          ! all PEs, compute and service
+    type(RPN_MPI_Comm) :: same_node    ! PEs in same SMP node (compute and service)
+    type(RPN_MPI_Comm) :: same_numa    ! PEs in same numa space (compute and service)
+  end type
   type, BIND(C) :: application
     integer(C_INT) :: all              ! all PEs, compute and service
     integer(C_INT) :: same_node        ! PEs in same SMP node (compute and service)
     integer(C_INT) :: same_numa        ! PEs in same numa space (compute and service)
   end type
+  
 ! the sets of information
+  type, BIND(C) :: grid_hierarchy_c    ! wrapped type for communicators
+    type(application_c) :: wrld        ! the entire world, conrains all applications
+    type(application_c) :: appl        ! application (domain), contains (M identical supergrids)
+    type(mpigrid_c)     :: sgrd        ! supergrid (contains N identical grids)
+    type(mpigrid_c)     :: grid        ! basic computation grid
+    type(subgrid_c)     :: blck        ! block of PEs inside a grid (subgrid)
+  end type
   type, BIND(C) :: grid_hierarchy
     type(application) :: wrld          ! the entire world, conrains all applications
     type(application) :: appl          ! application (domain), contains (M identical supergrids)
@@ -111,9 +151,19 @@
     type(mpigrid)     :: grid          ! basic computation grid
     type(subgrid)     :: blck          ! block of PEs inside a grid (subgrid)
   end type
+  
 ! the three usual associates, communicators, rank, and size + general info
-  integer(C_INT), parameter :: layout_version = 100001 ! version 1.00.00
-  type, BIND(C) :: mpi_layout
+  integer(C_INT), parameter :: layout_version = 100011 ! version 1.00.01
+  type, BIND(C) :: mpi_layout          ! wrapped type for communicators
+    integer(C_INT) :: version = layout_version
+    integer(C_INT) :: host             ! SMP host id
+    integer(C_INT) :: numa             ! numa space for this PE
+    integer(C_INT) :: colors(3)        ! application / supergrid / grid "color"
+    type(grid_hierarchy_c) :: comm       ! communicators
+    type(grid_hierarchy) :: rank       ! rank in communicator
+    type(grid_hierarchy) :: size       ! size of communicator
+  end type
+  type, BIND(C) :: mpi_layout_internal
     integer(C_INT) :: version = layout_version
     integer(C_INT) :: host             ! SMP host id
     integer(C_INT) :: numa             ! numa space for this PE

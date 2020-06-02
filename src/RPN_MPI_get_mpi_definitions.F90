@@ -106,8 +106,11 @@ end subroutine RPN_MPI_get_mpi_definitions
 module RPN_MPI_mpi_layout
   use ISO_C_BINDING
   implicit none
+! cannot include RPN_MPI_mpi_definitions.inc because it contains interfaces 
+! for RPN_MPI_get_mpi_definitions and RPN_MPI_get_mpi_layout
+  include 'RPN_MPI_mpi_symbols.inc'
   include 'RPN_MPI_mpi_layout.inc'
-  type(mpi_layout), save :: ml
+  type(mpi_layout_internal), save :: ml
 end module RPN_MPI_mpi_layout
 
 ! initialize RPN_MPI internal mpi layout (communicators, ranks, sizes)
@@ -153,7 +156,7 @@ subroutine RPN_MPI_get_mpi_layout(what, ierr) ! get a copy on RPN_MPI internal m
   use RPN_MPI_mpi_layout
   implicit none
   include 'mpif.h'
-  type(mpi_layout), intent(INOUT) :: what
+  type(mpi_layout_internal), intent(INOUT) :: what
   integer(C_INT), intent(OUT) :: ierr
   integer :: i
 
