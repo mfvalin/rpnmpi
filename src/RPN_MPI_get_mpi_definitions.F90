@@ -151,6 +151,17 @@ subroutine RPN_MPI_reset_mpi_layout()
   return
 end subroutine RPN_MPI_reset_mpi_layout
 
+! same as RPN_MPI_get_mpi_layout but advertized with type mpi_layout_internal rather than mpi_layout
+subroutine RPN_MPI_get_mpi_layout_raw(what, ierr) ! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
+  use ISO_C_BINDING
+  use RPN_MPI_mpi_layout
+  implicit none
+  type(mpi_layout_internal), intent(INOUT) :: what
+  integer(C_INT), intent(OUT) :: ierr
+  call RPN_MPI_get_mpi_layout(what, ierr)
+  return
+end subroutine RPN_MPI_get_mpi_layout_raw
+
 subroutine RPN_MPI_get_mpi_layout(what, ierr) ! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
   use ISO_C_BINDING
   use RPN_MPI_mpi_layout
