@@ -136,10 +136,10 @@ end
 #endif
 !**function  RPN_COMM_limit_2 global domain decomposition function (along one dimension)
 !InTf!
-!!integer function RPN_COMM_limit_2(my_id, npe, gmin, gmax,lmini,lmaxi,count, offset,relax)!InTf!
 !****f* RPN_COMM/RPN_COMM_limit_2
 ! SYNOPSIS
-      integer function RPN_COMM_limit_2(my_id, npe, gmin, gmax, lmini,lmaxi,count, offset,relax)
+      integer function RPN_COMM_limit_2 &                           !InTf!
+         (my_id, npe, gmin, gmax, lmini,lmaxi,count, offset,relax)  !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2015
 ! IGNORE
@@ -246,10 +246,10 @@ end
       return
       end function RPN_COMM_limit_2                       !InTf!
 !InTf!
-!!integer function RPN_COMM_limit(my_id, npe, gmin, gmax, lmini,lmaxi,count, offset) !InTf!
 !****f* RPN_COMM/RPN_COMM_limit
 ! SYNOPSIS
-      integer function RPN_COMM_limit(my_id, npe, gmin, gmax, lmini, lmaxi,count, offset)
+      integer function RPN_COMM_limit  &                   !InTf!
+         (my_id, npe, gmin, gmax, lmini, lmaxi,count, offset) !InTf!
 ! IGNORE
       implicit none                                        !InTf!
 ! ARGUMENTS

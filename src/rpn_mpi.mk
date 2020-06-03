@@ -78,21 +78,19 @@ $(VPATH)/RPN_MPI_interfaces.inc: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPA
 	(cd $(VPATH) ; \
 	cat RPN_*.?90 | grep '!InTfX!' | sed 's/^!![ ]*/      /' >RPN_MPI_interfaces.inc )
 	(cd $(VPATH) ; \
-	cat RPN_*.?90 RPN_*.c | ../tools/extract_interface.sh >>RPN_MPI_interfaces.inc ; \
-	rm -f ../tools/wrap_code.exe)
+	cat RPN_*.?90 RPN_*.c | ../tools/extract_interface.sh >>RPN_MPI_interfaces.inc)
 
 $(VPATH)/RPN_MPI_interfaces_int.inc: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPATH)/RPN_*.c)
 	(cd $(VPATH) ; rm -f RPN_MPI_interfaces_int.inc;)
 	(cd $(VPATH) ; \
-	for target in RPN_MPI_*.?90; \
+	for target in RPN_*.?90; \
 	do grep -q '!InTfX!' $$target || continue ; \
 	( echo "#if ! defined(IN_$${target%.*})" ; cat $$target | grep '!InTfX!' | sed 's/^!![ ]*/      /' ; echo "#endif" ) >>RPN_MPI_interfaces_int.inc ; \
 	done;)
 	(cd $(VPATH) ; \
-	for target in RPN_MPI_*.?90 RPN_MPI_*.c ; \
+	for target in RPN_*.?90 RPN_MPI_*.c ; \
 	do ../tools/extract_interface.sh $$target >>RPN_MPI_interfaces_int.inc ; \
-	done; \
-	rm -f ../tools/wrap_code.exe)
+	done; )
 
 # (re)build dependencies using perl script rdedep.pl
 $(VPATH)/dependencies.mk:

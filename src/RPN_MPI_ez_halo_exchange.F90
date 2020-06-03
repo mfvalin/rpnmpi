@@ -9,7 +9,7 @@
 ! * but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ! * Lesser General Public License for more details.
-
+!====================================================================================================
 module RPN_MPI_halo_cache
   use ISO_C_BINDING
   implicit none
@@ -28,15 +28,20 @@ contains
 ! an interface will be needed to use RPN_MPI_quick_halo
 ! the published interface will use the "void *" approach
 !
-!   type, BIND(C) :: address
+!   type, BIND(C) :: rpnmpi_loc
 !     integer(C_INTPTR_T) :: a
 !   end type
 !   interface
 !     subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_quick_halo')
-!       import :: address
+!       import :: rpnmpi_loc
 !       integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col
-!       type(address), intent(IN), value :: g
+!       type(rpnmpi_loc), intent(IN), value :: g
 !     end subroutine RPN_MPI_quick_halo
+!     subroutine RPN_MPI_quick_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_quick_halo8')
+!       import :: rpnmpi_loc
+!       integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col
+!       type(rpnmpi_loc), intent(IN), value :: g
+!     end subroutine RPN_MPI_quick_halo8
 !   end interface
 !
 subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_quick_halo')
@@ -147,8 +152,18 @@ subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,c
   ts(9) = t(5) - t(4)
   return
 end subroutine RPN_MPI_quick_halo
-end module RPN_MPI_halo_cache
 
+subroutine RPN_MPI_quick_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_quick_halo8')
+  use ISO_C_BINDING
+  implicit none
+  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col
+  integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
+
+  call RPN_MPI_quick_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,row,col)
+  return
+end subroutine RPN_MPI_quick_halo8
+end module RPN_MPI_halo_cache
+!====================================================================================================
 function RPN_MPI_get_halo_timings(t,n) result(nt)
   use RPN_MPI_halo_cache
   implicit none
@@ -255,19 +270,8 @@ subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)
   implicit none
   integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
   integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
-  call RPN_MPI_quick_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,rowcom,colcom)
+  call RPN_MPI_ez_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
 end subroutine RPN_MPI_ez_halo_8
-
-subroutine RPN_MPI_quick_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col)
-  use ISO_C_BINDING
-  use RPN_MPI_halo_cache
-  implicit none
-  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col
-  integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
-
-  call RPN_MPI_quick_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,row,col)
-  return
-end subroutine RPN_MPI_quick_halo8
 
 subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)
   use ISO_C_BINDING
@@ -275,6 +279,10 @@ subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)
   implicit none
   integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
   integer, intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
+
+  if(rowcom == MPI_COMM_NULL .or. colcom == MPI_COMM_NULL) then
+    ! get the appropriate row and column communicators from the internal RPN_MPI data
+  endif
 
   call RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rowcom,colcom)
   return

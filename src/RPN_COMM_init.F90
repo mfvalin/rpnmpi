@@ -32,9 +32,8 @@
       end SUBROUTINE RPN_COMM_init                                   !InTf!
 !===================================================================
 !InTf!
-!!INTEGER FUNCTION RPN_COMM_init_multigrid(Userinit,Pelocal,Petotal,Pex,Pey,MultiGrids) !InTf!
-      INTEGER FUNCTION RPN_COMM_init_multigrid&
-     &      (Userinit,Pelocal,Petotal,Pex,Pey,MultiGrids)
+      INTEGER FUNCTION RPN_COMM_init_multigrid   &                   !InTf!
+           (Userinit,Pelocal,Petotal,Pex,Pey,MultiGrids)             !InTf!
       use rpn_comm
       implicit none                                                  !InTf!
       external :: Userinit                                           !InTf!
@@ -49,8 +48,8 @@
       end FUNCTION RPN_COMM_init_multigrid                           !InTf!
 !===================================================================
 !InTf!
-      INTEGER FUNCTION RPN_COMM_init_multi_level &    !InTf!
-     &          (Userinit,Pelocal,Petotal,Pex,Pey,MultiGrids,Grids)  !InTf!
+      INTEGER FUNCTION RPN_COMM_init_multi_level &                   !InTf!
+              (Userinit,Pelocal,Petotal,Pex,Pey,MultiGrids,Grids)    !InTf!
       use rpn_comm
       implicit none                                                  !InTf!
       external :: Userinit                                           !InTf!

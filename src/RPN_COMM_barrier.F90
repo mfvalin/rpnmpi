@@ -74,7 +74,7 @@
           endif
         endif
 	return
-	end SUBROUTINE RPN_COMM_barrier                                !InTf!
+      end SUBROUTINE RPN_COMM_barrier                                !InTf!
 !InTf!
         integer function RPN_COMM_barrier_data(level,values,nvalues)                                !InTf!
         use RPN_COMM_barrier_priv
