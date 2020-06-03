@@ -86,8 +86,7 @@
 !    the strict distribution mode used previously and abort in case of error
 !     kept for compatibility with older versions of this library
 !InTf!
-!!      integer function RPN_COMM_topo(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill) !InTf!
-      integer function RPN_COMM_topo(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill)
+      integer function RPN_COMM_topo(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill) !InTf!
 ! Generate needed information about local tile along a specified axis.
 ! The input is the total number of point to divide and the size of the halo.
 ! The function will split the domain depending of the topology
