@@ -1,5 +1,5 @@
-!/* RPN_COMM - Library of useful routines for C and FORTRAN programming
-! * Copyright (C) 1975-2012  Division de Recherche en Prevision Numerique
+!/* RPN_MPI - Library of useful routines for C and FORTRAN programming
+! * Copyright (C) 1975-2020  Division de Recherche en Prevision Numerique
 ! *                          Environnement Canada
 ! *
 ! * This library is free software; you can redistribute it and/or
@@ -17,9 +17,19 @@
 ! * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ! * Boston, MA 02111-1307, USA.
 ! */
-!**function RPN_COMM_topo_2 compute the local bounds for a distributed array
 !InTf!
       integer function RPN_COMM_topo_2(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,relax,abort) !InTf!
+      use rpn_comm
+      implicit none                                                         !InTf!
+      integer, intent(in) :: nxg,halo,relax                                 !InTf!
+      logical, intent(in) :: alongx,fill,abort                              !InTf!
+      integer, intent(out):: minx,maxx,nxl,nxlmax,nx0                       !InTf!
+      integer, external :: RPN_MPI_topology
+      RPN_COMM_topo_2 = RPN_MPI_topology(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,relax,abort)
+      end function RPN_COMM_topo_2                                          !InTf!
+!**function RPN_MPI_topology compute the local bounds for a distributed array
+!InTf!
+      integer function RPN_MPI_topology(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,relax,abort) !InTf!
       use rpn_comm
       implicit none                                                         !InTf!
       integer, intent(in) :: nxg,halo,relax                                 !InTf!
@@ -67,7 +77,7 @@
             call RPN_COMM_finalize(ierr)
             stop
            else
-              RPN_COMM_topo_2 = ierr    ! error code from RPN_COMM_limit_2
+              RPN_MPI_topology = ierr    ! error code from RPN_COMM_limit_2
               return
            endif
       endif
@@ -79,10 +89,10 @@
         maxx = nxlmax + halo
         if(fill) maxx = maxx + 1 - mod(nxlmax,2)   ! this needs to be revised for cache based machines
 !
-        RPN_COMM_topo_2 = 0     ! SUCCESS
+        RPN_MPI_topology = 0     ! SUCCESS
         return
-        end  function RPN_COMM_topo_2                     !InTf!
-!    this is the old function, it calls the newer RPN_COMM_topo_2 forcing 
+        end  function RPN_MPI_topology                     !InTf!
+!    this is the old function, it calls the newer RPN_MPI_topology forcing 
 !    the strict distribution mode used previously and abort in case of error
 !     kept for compatibility with older versions of this library
 !InTf!
@@ -95,8 +105,8 @@
       integer, intent(in) :: nxg,halo                                              !InTf!
       logical, intent(in) :: alongx,fill                                           !InTf!
       integer, intent(out):: minx,maxx,nxl,nxlmax,nx0                              !InTf!
-        external RPN_COMM_topo_2
-        integer RPN_COMM_topo_2
-        RPN_COMM_topo=RPN_COMM_topo_2(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,0,.true.)
+        external RPN_MPI_topology
+        integer RPN_MPI_topology
+        RPN_COMM_topo=RPN_MPI_topology(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,0,.true.)
         return
         end function RPN_COMM_topo                                                 !InTf!
