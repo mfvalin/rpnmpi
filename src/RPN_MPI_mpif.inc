@@ -12,13 +12,13 @@ interface
   subroutine MPI_Comm_size(COMM, SIZE, IERROR)
     import :: RPN_MPI_Comm
     type(RPN_MPI_Comm), intent(IN) :: COMM
-    integer, intent(IN) :: SIZE
+    integer, intent(OUT) :: SIZE
     integer, intent(OUT) :: IERROR
   end subroutine MPI_Comm_size
-  subroutine MPI_Comm_rank(COMM, SIZE, IERROR)
+  subroutine MPI_Comm_rank(COMM, RANK, IERROR)
     import :: RPN_MPI_Comm
     type(RPN_MPI_Comm), intent(IN) :: COMM
-    integer, intent(IN) :: SIZE
+    integer, intent(OUT) :: RANK
     integer, intent(OUT) :: IERROR
   end subroutine MPI_Comm_rank
   subroutine MPI_Barrier(COMM, IERROR)
