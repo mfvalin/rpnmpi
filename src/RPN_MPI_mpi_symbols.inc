@@ -85,7 +85,7 @@
     !
     type(RPN_MPI_Group)   :: MPI_GROUP_NULL
     type(RPN_MPI_Request) :: MPI_REQUEST_NULL
-    integer :: MPI_ERRHANDLER_NULL
+    integer               :: MPI_ERRHANDLER_NULL
     type(RPN_MPI_Info)    :: MPI_INFO_NULL
     type(RPN_MPI_Win)     :: MPI_WIN_NULL
     !

@@ -123,6 +123,7 @@
       status = RPN_MPI_set_timeout_alarm(60)     ! maximum of 60 seconds for MPI_init
       if (.not. mpi_started ) call MPI_init(ierr)
       status = RPN_MPI_set_timeout_alarm(0)      ! timeout reset to infinity (no timeout)
+      call RPN_MPI_init_mpi_layout               ! make sure layout and constants structures are properly initialized
 !
 !     --------------------------------------------------------------------------
 !     all applications (domains)

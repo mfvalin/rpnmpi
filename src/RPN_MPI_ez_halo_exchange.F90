@@ -12,8 +12,9 @@
 !====================================================================================================
 module RPN_MPI_halo_cache
   use ISO_C_BINDING
+  use rpn_mpi_mpif
   implicit none
-  include 'mpif.h'
+!   include 'mpif.h'
   include 'RPN_MPI_system_interfaces.inc'
   integer, parameter :: NTS = 9
   integer(kind=8), dimension(NTS) :: ts = [0,0,0,0,0,0,0,0,0]   ! timing points
