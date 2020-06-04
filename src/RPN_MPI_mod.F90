@@ -53,11 +53,6 @@ module rpn_mpi_comm_0
 !   logical :: async_exch=.true.        ! asynchronous halo exchange (level 1)
   logical :: full_async_exch=.false.  ! fully asynchronous halo exchange (level 2)
   logical :: rpn_ew_ext_l = .false.   ! extended halo option (haloy extra rows on North and South tiles)
-end module rpn_mpi_comm_0
-
-module rpn_mpi_comm_1
-  use iso_c_binding
-  implicit none
 !
 !	domain boundary flags, LOGICAL
 !	.true. if a PE(TILE) is on a domain edge
@@ -65,6 +60,11 @@ module rpn_mpi_comm_1
 !	normally set by routine rpn_mpi_init
 !
 	logical bnd_east,bnd_west,bnd_north,bnd_south
+end module rpn_mpi_comm_0
+
+module rpn_mpi_comm_1
+  use iso_c_binding
+  implicit none
 !
 !       ---------------------------------------------------------------------
 !       the following block is used mainly by rpn_comm,

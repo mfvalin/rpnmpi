@@ -5,34 +5,37 @@ subroutine rpn_mpi_test_103
 !
   use ISO_C_BINDING
   implicit none
-  include 'mpif.h'
-! following include need to get rpnmpi_loc
+!   include 'mpif.h'
   include 'RPN_MPI.inc'
-  include 'RPN_MPI_mpi_symbols.inc'
-  interface
-    subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_quick_halo')
-      import :: rpnmpi_loc, C_INTPTR_T, RPN_MPI_Comm
-      integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
-!       integer, intent(IN)    :: row,col
-      type(RPN_MPI_Comm), intent(IN)    :: row,col
-      type(rpnmpi_loc), intent(IN), value :: g
-    end subroutine RPN_MPI_quick_halo
-  end interface
+  include 'RPN_MPI_mpif.inc'
+!   interface
+!     subroutine RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_quick_halo')
+!       import :: RPN_MPI_Loc, C_INTPTR_T, RPN_MPI_Comm
+!       integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
+! !       integer, intent(IN)    :: row,col
+!       type(RPN_MPI_Comm), intent(IN)    :: row,col
+!       type(RPN_MPI_Loc), intent(IN), value :: g
+!     end subroutine RPN_MPI_quick_halo
+!   end interface
   type(RPN_MPI_Comm) :: col_comm, row_comm
-  type(rpnmpi_loc) :: p
+  type(RPN_MPI_Loc) :: p
   integer, parameter :: NXCH = 100
   integer :: NI, NJ, NK, halox, haloy
   integer, dimension(:,:,:), allocatable :: z
   integer :: rankx, sizex, ranky, sizey, ier, petot, ranktot, errors
   integer :: i, j, k, offx, offy, l, m, larg1, larg2, larg3, stat1, stat2, stat3
-  integer :: rowcomm, colcomm
+!   integer :: rowcomm, colcomm
   integer :: ilo, ihi, jlo, jhi
   character(len=128) :: argv1, argv2, argv3, mode
   logical :: printit, redblack, yfirst, async, barrier
   real(kind=8) :: t1, t2
   real(kind=8), dimension(NXCH) :: txch
+  type(RPN_MPI_mpi_definitions)     :: d
+  type(RPN_MPI_mpi_definitions_raw) :: dr
 
   call MPI_Init(ier)
+  call RPN_MPI_get_mpi_definitions(d, ier)       ! get wrapped definitions
+  call RPN_MPI_get_mpi_definitions_raw(dr, ier)  ! get "raw" definitions
   printit = .false.
   call get_command_argument(1,argv1,larg1,stat1)
   call get_command_argument(2,argv2,larg2,stat2)
@@ -58,13 +61,15 @@ subroutine rpn_mpi_test_103
 
   allocate (z(1-halox:NI+halox,1-haloy:NJ+haloy,NK))
 !
-! split MPI_COMM_WORLD into row and column
+! split d%MPI_COMM_WORLD into row and column
 !
-  call MPI_comm_size(MPI_COMM_WORLD, petot, ier)
-  call MPI_comm_rank(MPI_COMM_WORLD, ranktot, ier)
+  call MPI_comm_size(d%MPI_COMM_WORLD, petot, ier)
+  call MPI_comm_rank(d%MPI_COMM_WORLD, ranktot, ier)
   if(sizex*sizey .ne. petot) goto 777
 !   if(ranktot == 0) write(6,*)'redblack =',redblack
   if(ranktot == 0) write(6,2)'sizex,sizey,NI,NJ,NK,halox,haloy=',sizex,sizey,NI,NJ,NK,halox,haloy
+  if(ranktot == 0) write(6,2)'storage size of RPN_MPI_mpi_definitions and RPN_MPI_mpi_definitions =', &
+       storage_size(d), storage_size(dr)
   if(yfirst) then
     rankx = ranktot / sizey
     ranky = mod(ranktot,sizey)
@@ -74,12 +79,12 @@ subroutine rpn_mpi_test_103
   endif
   do l=0,petot-1
     if(ranktot .eq. l .and. argv3(1:1) .eq. 't') write(6,2)'ranktot, petot, rankx, ranky =',ranktot+1, petot, rankx, ranky
-    call MPI_Barrier(MPI_COMM_WORLD,ier)
+    call MPI_Barrier(d%MPI_COMM_WORLD,ier)
   enddo
-  call MPI_Comm_split(MPI_COMM_WORLD, ranky, ranktot, rowcomm,ier)
-  call MPI_Comm_split(MPI_COMM_WORLD, rankx, ranktot, colcomm,ier)
+  call MPI_Comm_split(d%MPI_COMM_WORLD, ranky, ranktot, row_comm,ier)
+  call MPI_Comm_split(d%MPI_COMM_WORLD, rankx, ranktot, col_comm,ier)
 ! set halo exchange timing parameters
-  call RPN_MPI_ez_halo_parms(MPI_COMM_WORLD, rowcomm, colcomm, mode)
+  call RPN_MPI_ez_halo_parms(row_comm, col_comm, mode)
 
   offy = ranky * NJ
   offx = rankx * NI
@@ -91,7 +96,7 @@ subroutine rpn_mpi_test_103
   enddo
   enddo
   enddo
-  call MPI_Barrier(MPI_COMM_WORLD,ier)
+  call MPI_Barrier(d%MPI_COMM_WORLD,ier)
 !
 ! if we use
 !      include 'RPN_MPI_mpi_definitions.inc'
@@ -104,25 +109,25 @@ subroutine rpn_mpi_test_103
 !
 !
   p%a = loc(z)                             ! address of array subject to halo exchange
-  row_comm = RPN_MPI_Comm(rowcomm)
-  col_comm = RPN_MPI_Comm(colcomm)
-  call RPN_MPI_quick_halo(p,1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
+!   row_comm = RPN_MPI_Comm(rowcomm)
+!   col_comm = RPN_MPI_Comm(colcomm)
+  call RPN_MPI_quick_halo(RPN_MPI_Loc(loc(z)),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
   call RPN_MPI_reset_halo_timings          ! ignore timings for first call
-  call MPI_Barrier(MPI_COMM_WORLD,ier)     ! full sync
+  call MPI_Barrier(d%MPI_COMM_WORLD,ier)     ! full sync
 
   do i = 1, NXCH
-    call MPI_Barrier(MPI_COMM_WORLD,ier)
+    call MPI_Barrier(d%MPI_COMM_WORLD,ier)
     t1 = MPI_Wtime()
     p%a = loc(z)
-    call RPN_MPI_quick_halo(p,1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
+    call RPN_MPI_quick_halo(RPN_MPI_Loc(loc(z)),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
     txch(i) = MPI_Wtime() - t1
   enddo
   txch = txch * 1000000   ! convert into microseconds
-  call MPI_Barrier(MPI_COMM_WORLD,ier)
+  call MPI_Barrier(d%MPI_COMM_WORLD,ier)
 
   call RPN_MPI_print_halo_timings
 
-  call MPI_Barrier(MPI_COMM_WORLD,ier)
+  call MPI_Barrier(d%MPI_COMM_WORLD,ier)
   if(printit) then                       ! if we are printing arrays after exchange
     do m = sizey-1, 0, -1
     do l = sizex-1, 0, -1
@@ -132,7 +137,7 @@ subroutine rpn_mpi_test_103
 	  print 1,z(:,j,1)
 	enddo
       endif
-      call MPI_Barrier(MPI_COMM_WORLD,ier)
+      call MPI_Barrier(d%MPI_COMM_WORLD,ier)
     enddo
     enddo
   endif
@@ -156,7 +161,7 @@ subroutine rpn_mpi_test_103
   enddo
   enddo
   call flush(6)
-  call MPI_Barrier(MPI_COMM_WORLD,ier)
+  call MPI_Barrier(d%MPI_COMM_WORLD,ier)
   if(ranktot .eq. 0) write(6,*)'avg/min/max per exchange =',sum(txch)/NXCH,minval(txch),maxval(txch),' microseconds'
   if(errors .ne. 0)  write(6,*)'rank, ERRORS =',ranktot, errors
 !   write(6,*)'rank, ERRORS =',ranktot, errors

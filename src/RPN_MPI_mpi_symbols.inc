@@ -23,6 +23,10 @@
 !
 ! RPN_MPI wrappers equivalent MPI wrapped derived types (used to enforce interfaces)
 !
+  type, BIND(C) :: RPN_MPI_Loc
+    integer(C_INTPTR_T) :: a
+  end type
+
   type, BIND(C) :: RPN_MPI_Comm
     integer :: wrapped_value
   end type RPN_MPI_Comm
@@ -68,8 +72,29 @@
 !  used to check interface prototypes
 !  can be passed to RPN_MPI prototyped subroutines
 !
-  type :: RPN_MPI_wrapped_definitions
+!  CRITICAL:
+!  the contents and component order of this type using "wrapped" components MUST BE IDENTICAL
+!  to the contents of the "raw" type RPN_MPI_mpi_definitions_raw
+!  the RPN_MPI_get_mpi_definitions and RPN_MPI_get_mpi_definitions_raw subroutines
+!  RELY on this for correct behaviour
+!
+  type :: RPN_MPI_mpi_definitions
     integer :: version = mpi_symbols_version
+    !
+    !     some NULL "handles" not belonging to specific categories
+    !
+    type(RPN_MPI_Group)   :: MPI_GROUP_NULL
+    type(RPN_MPI_Request) :: MPI_REQUEST_NULL
+    integer :: MPI_ERRHANDLER_NULL
+    type(RPN_MPI_Info)    :: MPI_INFO_NULL
+    type(RPN_MPI_Win)     :: MPI_WIN_NULL
+    !
+    !     varia
+    !
+    integer :: MPI_STATUS_SIZE
+    integer :: MPI_ANY_SOURCE, MPI_ANY_TAG
+    integer :: MPI_SUCCESS, MPI_ERROR
+    integer :: MPI_ERRORS_ARE_FATAL, MPI_ERRORS_RETURN
     !
     !     communicators
     !
@@ -85,24 +110,24 @@
     type(RPN_MPI_Datatype) :: MPI_INTEGER, MPI_INTEGER1, MPI_INTEGER2, MPI_INTEGER4
     type(RPN_MPI_Datatype) :: MPI_INTEGER8, MPI_INTEGER16
     type(RPN_MPI_Datatype) :: MPI_REAL, MPI_REAL4, MPI_REAL8, MPI_REAL16
+!     type(RPN_MPI_Datatype) :: MPI_REAL2
     type(RPN_MPI_Datatype) :: MPI_DOUBLE_PRECISION
     type(RPN_MPI_Datatype) :: MPI_COMPLEX, MPI_COMPLEX8, MPI_COMPLEX16, MPI_COMPLEX32
     type(RPN_MPI_Datatype) :: MPI_DOUBLE_COMPLEX
     type(RPN_MPI_Datatype) :: MPI_2REAL, MPI_2DOUBLE_PRECISION, MPI_2INTEGER
+!     type(RPN_MPI_Datatype) :: MPI_2COMPLEX, MPI_2DOUBLE_COMPLEX
+!     type(RPN_MPI_Datatype) :: MPI_LOGICAL1, MPI_LOGICAL2, MPI_LOGICAL4, MPI_LOGICAL8
     !
     !     operators
     !
+    type(RPN_MPI_Op) :: MPI_OP_NULL
     type(RPN_MPI_Op) :: MPI_MAX, MPI_MIN, MPI_SUM, MPI_PROD, MPI_LAND
     type(RPN_MPI_Op) :: MPI_BAND, MPI_LOR, MPI_BOR, MPI_LXOR, MPI_BXOR
     type(RPN_MPI_Op) :: MPI_MAXLOC, MPI_MINLOC, MPI_REPLACE
-    type(RPN_MPI_Op) :: MPI_OP_NULL
     !
-    !     others
+    !     threads
     !
-    type(RPN_MPI_Win)     :: MPI_WIN_NULL
-    type(RPN_MPI_Info)    :: MPI_INFO_NULL
-    type(RPN_MPI_Group)   :: MPI_GROUP_NULL
-    type(RPN_MPI_Request) :: MPI_REQUEST_NULL
+    integer :: MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE
   end type
 !===================================================================
 !
@@ -124,14 +149,16 @@
 !
 !  user defined type containing frequently used MPI symbols
 !
-  type :: RPN_MPI_mpi_definitions
+  type :: RPN_MPI_mpi_definitions_raw
     integer :: version = mpi_symbols_version
     !
     !     some NULL "handles" not belonging to specific categories
     !
     integer :: MPI_GROUP_NULL
-    integer :: MPI_REQUEST_NULL, MPI_ERRHANDLER_NULL
-    integer :: MPI_INFO_NULL, MPI_WIN_NULL
+    integer :: MPI_REQUEST_NULL
+    integer :: MPI_ERRHANDLER_NULL
+    integer :: MPI_INFO_NULL
+    integer :: MPI_WIN_NULL
     !
     !     varia
     !

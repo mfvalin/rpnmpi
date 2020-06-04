@@ -17,12 +17,27 @@
 ! ! Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ! ! Boston, MA 02111-1307, USA.
 ! !/
-subroutine RPN_MPI_get_mpi_definitions(what, ierr)  ! get a copy of MPI definitions
+subroutine RPN_MPI_get_mpi_definitions_raw(what, ierr)          !InTf! ! get a copy of MPI definitions
+  use ISO_C_BINDING
+  implicit none
+  include 'RPN_MPI_mpi_symbols.inc'
+!! import :: RPN_MPI_mpi_definitions_raw                        !InTf! 
+  type(RPN_MPI_mpi_definitions_raw), intent(INOUT) :: what      !InTf! 
+  integer, intent(OUT) :: ierr                                  !InTf! 
+  call RPN_MPI_get_mpi_definitions(what, ierr)
+  return
+end subroutine RPN_MPI_get_mpi_definitions_raw          !InTf! ! get a copy of MPI definitions
+
+subroutine RPN_MPI_get_mpi_definitions(what, ierr)          !InTf! ! get a copy of MPI definitions
+  use ISO_C_BINDING
   implicit none
   include 'mpif.h'
   include 'RPN_MPI_mpi_symbols.inc'
-  type(RPN_MPI_mpi_definitions), intent(INOUT) :: what
-  integer, intent(OUT) :: ierr
+! white lie in published interface, what is treated as the "raw" type rather than the "wrapped" type
+!! import :: RPN_MPI_mpi_definitions                        !InTf! 
+!!  type(RPN_MPI_mpi_definitions), intent(INOUT) :: what    !InTf! 
+  type(RPN_MPI_mpi_definitions_raw), intent(INOUT) :: what
+  integer, intent(OUT) :: ierr                              !InTf! 
 
   ierr = MPI_ERROR
   if(what%version .ne. mpi_symbols_version) then
@@ -101,7 +116,7 @@ subroutine RPN_MPI_get_mpi_definitions(what, ierr)  ! get a copy of MPI definiti
   what%MPI_THREAD_MULTIPLE = MPI_THREAD_MULTIPLE
 
   return
-end subroutine RPN_MPI_get_mpi_definitions
+end subroutine RPN_MPI_get_mpi_definitions                  !InTf! 
 
 module RPN_MPI_mpi_layout
   use ISO_C_BINDING
@@ -114,7 +129,7 @@ module RPN_MPI_mpi_layout
 end module RPN_MPI_mpi_layout
 
 ! initialize RPN_MPI internal mpi layout (communicators, ranks, sizes)
-subroutine RPN_MPI_reset_mpi_layout() 
+subroutine RPN_MPI_reset_mpi_layout()                       !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
   include 'mpif.h'
@@ -149,26 +164,32 @@ subroutine RPN_MPI_reset_mpi_layout()
   ml%size%blck = subgrid(-1, -1, -1)
 
   return
-end subroutine RPN_MPI_reset_mpi_layout
+end subroutine RPN_MPI_reset_mpi_layout                     !InTf! 
 
 ! same as RPN_MPI_get_mpi_layout but advertized with type mpi_layout_internal rather than mpi_layout
-subroutine RPN_MPI_get_mpi_layout_raw(what, ierr) ! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
+! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
+subroutine RPN_MPI_get_mpi_layout_raw(what, ierr)            !InTf! 
   use ISO_C_BINDING
   use RPN_MPI_mpi_layout
   implicit none
-  type(mpi_layout_internal), intent(INOUT) :: what
-  integer(C_INT), intent(OUT) :: ierr
+!! import :: mpi_layout_internal, C_INT                      !InTf! 
+  type(mpi_layout_internal), intent(INOUT) :: what           !InTf! 
+  integer(C_INT), intent(OUT) :: ierr                        !InTf! 
   call RPN_MPI_get_mpi_layout(what, ierr)
   return
-end subroutine RPN_MPI_get_mpi_layout_raw
+end subroutine RPN_MPI_get_mpi_layout_raw                    !InTf! 
 
-subroutine RPN_MPI_get_mpi_layout(what, ierr) ! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
+! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
+subroutine RPN_MPI_get_mpi_layout(what, ierr)               !InTf! 
   use ISO_C_BINDING
   use RPN_MPI_mpi_layout
   implicit none
   include 'mpif.h'
+! white lie in published interface, what is treated as the "internal" type rather than the "wrapped" type
+!! import :: mpi_layout, C_INT                              !InTf! 
+!! type(mpi_layout), intent(INOUT) :: what                  !InTf! 
   type(mpi_layout_internal), intent(INOUT) :: what
-  integer(C_INT), intent(OUT) :: ierr
+  integer(C_INT), intent(OUT) :: ierr                       !InTf! 
   integer :: i
 
   ierr = MPI_ERROR
@@ -187,4 +208,4 @@ subroutine RPN_MPI_get_mpi_layout(what, ierr) ! get a copy on RPN_MPI internal m
   what%rank%sgrd%column    = -1
   what%size%sgrd%column    = -1
   return
-end subroutine RPN_MPI_get_mpi_layout
+end subroutine RPN_MPI_get_mpi_layout                       !InTf! 
