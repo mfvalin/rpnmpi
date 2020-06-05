@@ -2,10 +2,13 @@ subroutine rpn_mpi_test_100
   use ISO_C_BINDING
   implicit none
   include 'RPN_MPI.inc'
-  print *,'INFO: compilation/load test O.K.'
+  include 'RPN_MPI_mpif.inc'
+  print *,'INFO: compilation/load is O.K.'
+  print *,'INFO: this is a non MPI test'
   call sub1          ! set values
   call sub2          ! check values from module
   call sub3          ! check values in "user" mode
+  print *,'INFO: if no error message was issued, the test is O.K.'
 end subroutine rpn_mpi_test_100
 subroutine sub1
   use ISO_C_BINDING
@@ -24,6 +27,7 @@ subroutine sub1
   mw%comm%blck%all = RPN_MPI_Comm(34567)
 end subroutine sub1
 subroutine sub2
+! check that wrapped and raw structures contain the dame information
   use ISO_C_BINDING
   use RPN_MPI_mpi_layout
   implicit none
@@ -41,6 +45,9 @@ subroutine sub2
   print *,'dw%MPI_COMM_NULL  =', dw%MPI_COMM_NULL
   if(dw%MPI_COMM_NULL%wrapped_value .ne. MPI_COMM_NULL) print *,'ERROR'
 
+! NOTE: 
+!   not all compilers behave correctly with print *,mw%comm%wrld%all
+!   hence the use of transfer(mw%comm%wrld%all,1) to force a "honest" integer
   print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, transfer(mw%comm%wrld%all,1)
   print *,'mw%comm%grid%all  =', ml%comm%grid%all, transfer(mw%comm%grid%all,1)
   print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, transfer(mw%comm%sgrd%all,1)
@@ -63,25 +70,31 @@ subroutine sub2
 end subroutine sub2
 
 subroutine sub3
+! perform the same check as sub2 but with copies of structures
+! obtained using RPN_MPI_get_mpi_.... subroutines
   use ISO_C_BINDING
   implicit none
   include 'RPN_MPI.inc'
-  type(RPN_MPI_mpi_definitions_raw) :: dr
-  type(RPN_MPI_mpi_definitions) :: dw
-  type(mpi_layout_internal) :: ml
-  type(mpi_layout) :: mw
-  integer :: ierr
+  type(RPN_MPI_mpi_definitions_raw) :: dr  ! "raw" MPI symbols
+  type(RPN_MPI_mpi_definitions)     :: dw  ! "wrapped" MPI symbols
+  type(mpi_layout_internal)         :: ml  ! "raw" RPN_MPI layout information
+  type(mpi_layout)                  :: mw  ! "wrapped" RPN_MPI layout information
+  integer :: ier
 
-  call RPN_MPI_get_mpi_definitions_raw(dr, ierr)
-  call RPN_MPI_get_mpi_definitions(dw, ierr)
-  call RPN_MPI_get_mpi_layout_raw(ml, ierr)
-  call RPN_MPI_get_mpi_layout(mw, ierr)
+  call RPN_MPI_get_mpi_definitions_raw(dr, ier)
+  if(ier .ne. dr%MPI_SUCCESS) print *,'ERROR (RPN_MPI_get_mpi_definitions_raw)'
+  call RPN_MPI_get_mpi_definitions(dw, ier)
+  if(ier .ne. dr%MPI_SUCCESS) print *,'ERROR (RPN_MPI_get_mpi_definitions)'
+  call RPN_MPI_get_mpi_layout_raw(ml, ier)
+  if(ier .ne. dr%MPI_SUCCESS) print *,'ERROR (RPN_MPI_get_mpi_layout_raw)'
+  call RPN_MPI_get_mpi_layout(mw, ier)
+  if(ier .ne. dr%MPI_SUCCESS) print *,'ERROR (RPN_MPI_get_mpi_layout)'
 
   print *,'==================== IN USER MODE ===================='
-  print *,'MPI_COMM_WORLD    =', dw%MPI_COMM_WORLD, dr%MPI_COMM_WORLD
+  print *,'MPI_COMM_WORLD    =', transfer(dw%MPI_COMM_WORLD,1), dr%MPI_COMM_WORLD
   if(transfer(dw%MPI_COMM_WORLD,1) .ne. dr%MPI_COMM_WORLD) print *,'ERROR'
 
-  print *,'MPI_COMM_NULL     =', dw%MPI_COMM_NULL, dr%MPI_COMM_NULL
+  print *,'MPI_COMM_NULL     =', transfer(dw%MPI_COMM_NULL,1), dr%MPI_COMM_NULL
   if(transfer(dw%MPI_COMM_NULL,1) .ne. dr%MPI_COMM_NULL) print *,'ERROR'
 
   print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, transfer(mw%comm%wrld%all,1)
