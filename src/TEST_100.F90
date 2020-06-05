@@ -42,11 +42,11 @@ subroutine sub2
   if(dw%MPI_COMM_NULL%wrapped_value .ne. MPI_COMM_NULL) print *,'ERROR'
 
   print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, mw%comm%wrld%all
-  print *,'mw%comm%grid%all  =', ml%comm%grid%all, mw%comm%wrld%all
-  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, mw%comm%wrld%all
+  print *,'mw%comm%grid%all  =', ml%comm%grid%all, mw%comm%grid%all
+  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, mw%comm%sgrd%all
   if(transfer(mw%comm%sgrd%all,1) .ne. 23456) print *,'ERROR'
-  print *,'mw%comm%appl%all  =', ml%comm%appl%all, mw%comm%wrld%all
-  print *,'mw%comm%blck%all  =', ml%comm%blck%all, mw%comm%wrld%all
+  print *,'mw%comm%appl%all  =', ml%comm%appl%all, mw%comm%appl%all
+  print *,'mw%comm%blck%all  =', ml%comm%blck%all, mw%comm%blck%all
   if(transfer(mw%comm%blck%all,1) .ne. 34567) print *,'ERROR'
 
   print *,'mw%rank%wrld%all  =', ml%rank%wrld%all, mw%rank%wrld%all
@@ -85,11 +85,11 @@ subroutine sub3
   if(transfer(dw%MPI_COMM_NULL,1) .ne. dr%MPI_COMM_NULL) print *,'ERROR'
 
   print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, mw%comm%wrld%all
-  print *,'mw%comm%grid%all  =', ml%comm%grid%all, mw%comm%wrld%all
-  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, mw%comm%wrld%all
+  print *,'mw%comm%grid%all  =', ml%comm%grid%all, mw%comm%grid%all
+  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, mw%comm%sgrd%all
   if(transfer(mw%comm%sgrd%all,1) .ne. 23456) print *,'ERROR'
-  print *,'mw%comm%appl%all  =', ml%comm%appl%all, mw%comm%wrld%all
-  print *,'mw%comm%blck%all  =', ml%comm%blck%all, mw%comm%wrld%all
+  print *,'mw%comm%appl%all  =', ml%comm%appl%all, mw%comm%appl%all
+  print *,'mw%comm%blck%all  =', ml%comm%blck%all, mw%comm%blck%all
   if(transfer(mw%comm%blck%all,1) .ne. 34567) print *,'ERROR'
 
   print *,'mw%rank%wrld%all  =', ml%rank%wrld%all, mw%rank%wrld%all

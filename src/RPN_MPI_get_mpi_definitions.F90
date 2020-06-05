@@ -121,11 +121,11 @@ contains
   end subroutine RPN_MPI_init_mpi_layout
 end module RPN_MPI_mpi_layout
 
-subroutine RPN_MPI_get_mpi_definitions_raw(what, ierr)          !InTf! ! get a copy of raw MPI definitions
+ subroutine RPN_MPI_get_mpi_definitions_raw(what, ierr)          !InTf! ! get a copy of raw MPI definitions
   use ISO_C_BINDING
   use RPN_MPI_mpi_layout
   implicit none
-!! import :: RPN_MPI_mpi_definitions_raw                        !InTf! 
+!!  import :: RPN_MPI_mpi_definitions_raw                        !InTf! 
   type(RPN_MPI_mpi_definitions_raw), intent(INOUT) :: what      !InTf! 
   integer, intent(OUT) :: ierr                                  !InTf! 
 
@@ -138,13 +138,13 @@ subroutine RPN_MPI_get_mpi_definitions_raw(what, ierr)          !InTf! ! get a c
   ierr = MPI_SUCCESS
   what = dr
   return
-end subroutine RPN_MPI_get_mpi_definitions_raw          !InTf!
+ end subroutine RPN_MPI_get_mpi_definitions_raw          !InTf!
 
-subroutine RPN_MPI_get_mpi_definitions(what, ierr)          !InTf! ! get a copy of wrapped MPI definitions
+ subroutine RPN_MPI_get_mpi_definitions(what, ierr)          !InTf! ! get a copy of wrapped MPI definitions
   use ISO_C_BINDING
   use RPN_MPI_mpi_layout
   implicit none
-!! import :: RPN_MPI_mpi_definitions                        !InTf! 
+!!  import :: RPN_MPI_mpi_definitions                        !InTf! 
   type(RPN_MPI_mpi_definitions), intent(INOUT) :: what      !InTf! 
   integer, intent(OUT) :: ierr                              !InTf! 
 
@@ -158,11 +158,11 @@ subroutine RPN_MPI_get_mpi_definitions(what, ierr)          !InTf! ! get a copy 
   what = transfer(dr,dw)
 
   return
-end subroutine RPN_MPI_get_mpi_definitions                  !InTf! 
+ end subroutine RPN_MPI_get_mpi_definitions                  !InTf! 
 
 ! initialize RPN_MPI internal mpi layout (communicators, ranks, sizes)
 ! OBSOLETE NOW, replaced by RPN_MPI_init_mpi_layout
-subroutine RPN_MPI_reset_mpi_layout()                       !InTf! 
+ subroutine RPN_MPI_reset_mpi_layout()                       !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
   include 'RPN_MPI_system_interfaces.inc'
@@ -197,27 +197,27 @@ subroutine RPN_MPI_reset_mpi_layout()                       !InTf!
 !   ml%size%blck = subgrid(-1, -1, -1)
 
   return
-end subroutine RPN_MPI_reset_mpi_layout                     !InTf! 
+ end subroutine RPN_MPI_reset_mpi_layout                     !InTf! 
 
 ! same as RPN_MPI_get_mpi_layout but advertized with type mpi_layout_internal rather than mpi_layout
 ! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
-subroutine RPN_MPI_get_mpi_layout_raw(what, ierr)            !InTf! 
+ subroutine RPN_MPI_get_mpi_layout_raw(what, ierr)            !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
-!! import :: mpi_layout_internal, C_INT                      !InTf! 
+!!  import :: mpi_layout_internal, C_INT                      !InTf! 
   type(mpi_layout_internal), intent(INOUT) :: what           !InTf! 
   integer(C_INT), intent(OUT) :: ierr                        !InTf! 
   call RPN_MPI_get_mpi_layout(what, ierr)
   return
-end subroutine RPN_MPI_get_mpi_layout_raw                    !InTf! 
+ end subroutine RPN_MPI_get_mpi_layout_raw                    !InTf! 
 
 ! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
-subroutine RPN_MPI_get_mpi_layout(what, ierr)               !InTf! 
+ subroutine RPN_MPI_get_mpi_layout(what, ierr)               !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
 ! white lie in published interface, "what" is treated as the "internal" type rather than the "wrapped" type
-!! import :: mpi_layout, C_INT                              !InTf! 
-!! type(mpi_layout), intent(INOUT) :: what                  !InTf! 
+!!  import :: mpi_layout, C_INT                              !InTf! 
+!!  type(mpi_layout), intent(INOUT) :: what                  !InTf! 
   type(mpi_layout_internal), intent(INOUT) :: what
   integer(C_INT), intent(OUT) :: ierr                       !InTf! 
   integer :: i
@@ -238,4 +238,4 @@ subroutine RPN_MPI_get_mpi_layout(what, ierr)               !InTf!
   what%rank%sgrd%column    = -1
   what%size%sgrd%column    = -1
   return
-end subroutine RPN_MPI_get_mpi_layout                       !InTf! 
+ end subroutine RPN_MPI_get_mpi_layout                       !InTf! 

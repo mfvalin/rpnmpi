@@ -232,7 +232,7 @@ subroutine RPN_MPI_print_halo_timings
 end subroutine RPN_MPI_print_halo_timings
 
 ! set information for halo exchange timings
-subroutine RPN_MPI_ez_halo_parms(row, col, mode)      !InTf!
+ subroutine RPN_MPI_ez_halo_parms(row, col, mode)      !InTf!
   use RPN_MPI_halo_cache
   implicit none
 !!  import :: RPN_MPI_Comm                                  !InTf!
@@ -251,7 +251,7 @@ subroutine RPN_MPI_ez_halo_parms(row, col, mode)      !InTf!
   barrier  = trim(mode) .eq. 'BARRIER'
   if(rankx+ranky == 0) write(6,*) 'MODE = '//trim(mode)
   return
-end subroutine RPN_MPI_ez_halo_parms                        !InTf!
+ end subroutine RPN_MPI_ez_halo_parms                        !InTf!
 
 ! RED/BLACK method uses only synchronous send and recv
 !   West -> East move
@@ -268,7 +268,7 @@ end subroutine RPN_MPI_ez_halo_parms                        !InTf!
 !     ODD PEs
 !                      send to even PE at West
 !       if not East PE recv from even PE at East
-subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)      !InTf!
+ subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)      !InTf!
   use ISO_C_BINDING
   use RPN_MPI_halo_cache
   implicit none
@@ -278,9 +278,9 @@ subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)      
 !!  type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
   integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
   call RPN_MPI_ez_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
-end subroutine RPN_MPI_ez_halo_8                                                !InTf!
+ end subroutine RPN_MPI_ez_halo_8                                                !InTf!
 
-subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)        !InTf!
+ subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)        !InTf!
   use ISO_C_BINDING
   use RPN_MPI_halo_cache
   implicit none
@@ -296,4 +296,4 @@ subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy)        
 
   call RPN_MPI_quick_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rowcom,colcom)
   return
-end subroutine RPN_MPI_ez_halo                                                  !InTf!
+ end subroutine RPN_MPI_ez_halo                                                  !InTf!
