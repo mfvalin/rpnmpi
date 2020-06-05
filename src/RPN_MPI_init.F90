@@ -62,20 +62,15 @@
       include 'RPN_MPI_system_interfaces.inc'
       integer ierr, i, j, count, npe, reste, nslots, key, status, core
       integer :: pe_type    ! 0 = compute, 1 = service
-      integer :: service
-      integer :: compute
+      integer :: service, compute
       logical mpi_started
-      integer gr1, gr2
       INTEGER newgroup,rowcomm
-      integer, allocatable, dimension(:) :: proc_indomm
       integer ndom, lndom, nproc, procmax,procmin
       logical ok, allok
-      logical RPN_MPI_grank
       integer RPN_MPI_petopo, RPN_MPI_version
       character *4096 SYSTEM_COMMAND
-      character *32 access_mode
-      integer ncolors,my_color,directory_file_num,iun
-      integer version_marker, version_max, version_min
+      integer ncolors,my_color,iun
+      integer version_marker, version_max
       integer pe_my_location(10)
 !       external RPN_MPI_unbind_process
       integer, external :: RPN_MPI_get_a_free_unit, RPN_MPI_set_timeout_alarm
@@ -96,9 +91,10 @@
       enddo
       call RPN_MPI_reset_mpi_layout   ! initialize NEW style layout structure
       call RPN_MPI_get_core_and_numa(core, ml%numa)  ! get numa space for this PE
-      ml%host = get_host_id()
+      ml%host = get_host_id()   ! get host id for this PE
       compute = Io / 10         ! number of compute PEs in a PE block (compute + service PEs)
       service = mod(Io, 10)     ! number of service(IO) PEs in a PE block
+!
 !     initialize OLD style variables
       pe_indomm=-1
       pe_indomms=-1
@@ -120,10 +116,10 @@
       endif
 !
       call MPI_INITIALIZED(mpi_started,ierr)      ! is the MPI library already initialized ?
-      status = RPN_MPI_set_timeout_alarm(60)     ! maximum of 60 seconds for MPI_init
+      status = RPN_MPI_set_timeout_alarm(60)      ! maximum of 60 seconds for MPI_init
       if (.not. mpi_started ) call MPI_init(ierr)
-      status = RPN_MPI_set_timeout_alarm(0)      ! timeout reset to infinity (no timeout)
-      call RPN_MPI_init_mpi_layout               ! make sure layout and constants structures are properly initialized
+      status = RPN_MPI_set_timeout_alarm(0)       ! timeout reset to infinity (no timeout)
+      call RPN_MPI_init_mpi_layout                ! make sure layout and constants structures are properly initialized
 !
 !     --------------------------------------------------------------------------
 !     all applications (domains)
