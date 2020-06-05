@@ -25,10 +25,10 @@ module RPN_MPI_mpi_layout
   include 'RPN_MPI_mpi_layout.inc'
 
   ! ml and mw will be initialized by RPN_MPI_init_mpi_layout
-  type(mpi_layout_internal), save         :: ml    ! RPN_MPI communicators, ranks, sizes
-  type(mpi_layout), save                  :: mw    ! communicators, ranks, sizes, wrapped
+  type(mpi_layout_internal), save, target :: ml    ! RPN_MPI communicators, ranks, sizes
+  type(mpi_layout), save, pointer         :: mw => NULL()    ! communicators, ranks, sizes, wrapped
   ! MPI constants, dr is statically initialized, dr is copied into dw by RPN_MPI_init_mpi_layout
-  type(RPN_MPI_mpi_definitions_raw), save :: dr    = RPN_MPI_mpi_definitions_raw( &
+  type(RPN_MPI_mpi_definitions_raw), save, target :: dr    = RPN_MPI_mpi_definitions_raw( &
     mpi_symbols_version, &
     MPI_GROUP_NULL, MPI_REQUEST_NULL,MPI_ERRHANDLER_NULL, MPI_INFO_NULL,  MPI_WIN_NULL, &
     MPI_STATUS_SIZE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_SUCCESS, MPI_ERROR, &
@@ -45,13 +45,17 @@ module RPN_MPI_mpi_layout
     MPI_LOR, MPI_BOR, MPI_LXOR, MPI_BXOR, MPI_MAXLOC, MPI_MINLOC, MPI_REPLACE, &
     MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE &
     )
-  type(RPN_MPI_mpi_definitions), save     :: dw    ! MPI constants, "wrapped"
+  type(RPN_MPI_mpi_definitions), save, pointer :: dw => NULL()   ! MPI constants, "wrapped"
 contains
   subroutine RPN_MPI_init_mpi_layout     ! MUST BE CALLED ASAP by RPN_MPI_init
     implicit none
     include 'RPN_MPI_system_interfaces.inc'
     integer :: cpu
-    dw = transfer(dr,dw)
+    type(C_PTR) :: p
+
+    p = C_LOC(dr)
+    call C_F_POINTER(p, dw)
+!     dw = transfer(dr,dw)
 
     ml%version = layout_version
     ml%host = get_host_id()              ! get linux host id
@@ -80,7 +84,10 @@ contains
     ml%comm%blck = subgrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL)
     ml%rank%blck = subgrid(-1, -1, -1)
     ml%size%blck = subgrid(-1, -1, -1)
-    mw = transfer(ml,mw)
+
+    p = C_LOC(ml)
+    call C_F_POINTER(p, mw)
+!     mw = transfer(ml,mw)
     return
   end subroutine RPN_MPI_init_mpi_layout
 end module RPN_MPI_mpi_layout

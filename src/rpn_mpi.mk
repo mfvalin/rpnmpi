@@ -34,7 +34,7 @@ DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI.inc $(VPATH)/RPN
                $(VPATH)/RPN_MPI_types.inc $(VPATH)/RPN_MPI_constants.inc \
                $(VPATH)/RPN_MPI_ftoc.inc $(VPATH)/RPN_MPI_is_null.inc \
                $(VPATH)/RPN_MPI_mpi_layout.inc $(VPATH)/RPN_MPI_mpi_symbols.inc \
-               $(VPATH)/RPN_MPI_mpi_definitions.inc \
+               $(VPATH)/RPN_MPI_mpi_definitions.inc $(VPATH)/RPN_MPI_mpif.inc \
                $(VPATH)/RPN_MPI_system_interfaces.inc
 
 ITF = $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI_interfaces_int.inc
