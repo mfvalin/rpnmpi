@@ -41,23 +41,23 @@ subroutine sub2
   print *,'dw%MPI_COMM_NULL  =', dw%MPI_COMM_NULL
   if(dw%MPI_COMM_NULL%wrapped_value .ne. MPI_COMM_NULL) print *,'ERROR'
 
-  print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, mw%comm%wrld%all
-  print *,'mw%comm%grid%all  =', ml%comm%grid%all, mw%comm%grid%all
-  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, mw%comm%sgrd%all
+  print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, transfer(mw%comm%wrld%all,1)
+  print *,'mw%comm%grid%all  =', ml%comm%grid%all, transfer(mw%comm%grid%all,1)
+  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, transfer(mw%comm%sgrd%all,1)
   if(transfer(mw%comm%sgrd%all,1) .ne. 23456) print *,'ERROR'
-  print *,'mw%comm%appl%all  =', ml%comm%appl%all, mw%comm%appl%all
-  print *,'mw%comm%blck%all  =', ml%comm%blck%all, mw%comm%blck%all
+  print *,'mw%comm%appl%all  =', ml%comm%appl%all, transfer(mw%comm%appl%all,1)
+  print *,'mw%comm%blck%all  =', ml%comm%blck%all, transfer(mw%comm%blck%all,1)
   if(transfer(mw%comm%blck%all,1) .ne. 34567) print *,'ERROR'
 
-  print *,'mw%rank%wrld%all  =', ml%rank%wrld%all, mw%rank%wrld%all
+  print *,'mw%rank%wrld%all  =', ml%rank%wrld%all, transfer(mw%rank%wrld%all,1)
   if(transfer(mw%rank%wrld%all,1) .ne. 1) print *,'ERROR'
-  print *,'mw%size%wrld%all  =', ml%size%wrld%all, mw%size%wrld%all
+  print *,'mw%size%wrld%all  =', ml%size%wrld%all, transfer(mw%size%wrld%all,1)
   if(transfer(mw%size%wrld%all,1) .ne. 111) print *,'ERROR'
-  print *,'mw%rank%sgrd%all  =', ml%rank%sgrd%all, mw%rank%sgrd%all
-  print *,'mw%size%sgrd%all  =', ml%size%sgrd%all, mw%size%sgrd%all
+  print *,'mw%rank%sgrd%all  =', ml%rank%sgrd%all, transfer(mw%rank%sgrd%all,1)
+  print *,'mw%size%sgrd%all  =', ml%size%sgrd%all, transfer(mw%size%sgrd%all,1)
   if(transfer(mw%size%sgrd%all,1) .ne. 55) print *,'ERROR'
-  print *,'mw%rank%grid%all  =', ml%rank%grid%all, mw%rank%grid%all
-  print *,'mw%size%grid%all  =', ml%size%grid%all, mw%size%grid%all
+  print *,'mw%rank%grid%all  =', ml%rank%grid%all, transfer(mw%rank%grid%all,1)
+  print *,'mw%size%grid%all  =', ml%size%grid%all, transfer(mw%size%grid%all,1)
   if(transfer(mw%size%grid%all,1) .ne. 11) print *,'ERROR'
 
 end subroutine sub2
@@ -84,23 +84,23 @@ subroutine sub3
   print *,'MPI_COMM_NULL     =', dw%MPI_COMM_NULL, dr%MPI_COMM_NULL
   if(transfer(dw%MPI_COMM_NULL,1) .ne. dr%MPI_COMM_NULL) print *,'ERROR'
 
-  print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, mw%comm%wrld%all
-  print *,'mw%comm%grid%all  =', ml%comm%grid%all, mw%comm%grid%all
-  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, mw%comm%sgrd%all
+  print *,'mw%comm%wrld%all  =', ml%comm%wrld%all, transfer(mw%comm%wrld%all,1)
+  print *,'mw%comm%grid%all  =', ml%comm%grid%all, transfer(mw%comm%grid%all,1)
+  print *,'mw%comm%sgrd%all  =', ml%comm%sgrd%all, transfer(mw%comm%sgrd%all,1)
   if(transfer(mw%comm%sgrd%all,1) .ne. 23456) print *,'ERROR'
-  print *,'mw%comm%appl%all  =', ml%comm%appl%all, mw%comm%appl%all
-  print *,'mw%comm%blck%all  =', ml%comm%blck%all, mw%comm%blck%all
+  print *,'mw%comm%appl%all  =', ml%comm%appl%all, transfer(mw%comm%appl%all,1)
+  print *,'mw%comm%blck%all  =', ml%comm%blck%all, transfer(mw%comm%blck%all,1)
   if(transfer(mw%comm%blck%all,1) .ne. 34567) print *,'ERROR'
 
-  print *,'mw%rank%wrld%all  =', ml%rank%wrld%all, mw%rank%wrld%all
+  print *,'mw%rank%wrld%all  =', ml%rank%wrld%all, transfer(mw%rank%wrld%all,1)
   if(transfer(mw%rank%wrld%all,1) .ne. 1) print *,'ERROR'
-  print *,'mw%size%wrld%all  =', ml%size%wrld%all, mw%size%wrld%all
+  print *,'mw%size%wrld%all  =', ml%size%wrld%all, transfer(mw%size%wrld%all,1)
   if(transfer(mw%size%wrld%all,1) .ne. 111) print *,'ERROR'
-  print *,'mw%rank%sgrd%all  =', ml%rank%sgrd%all, mw%rank%sgrd%all
-  print *,'mw%size%sgrd%all  =', ml%size%sgrd%all, mw%size%sgrd%all
+  print *,'mw%rank%sgrd%all  =', ml%rank%sgrd%all, transfer(mw%rank%sgrd%all,1)
+  print *,'mw%size%sgrd%all  =', ml%size%sgrd%all, transfer(mw%size%sgrd%all,1)
   if(transfer(mw%size%sgrd%all,1) .ne. 55) print *,'ERROR'
-  print *,'mw%rank%grid%all  =', ml%rank%grid%all, mw%rank%grid%all
-  print *,'mw%size%grid%all  =', ml%size%grid%all, mw%size%grid%all
+  print *,'mw%rank%grid%all  =', ml%rank%grid%all, transfer(mw%rank%grid%all,1)
+  print *,'mw%size%grid%all  =', ml%size%grid%all, transfer(mw%size%grid%all,1)
   if(transfer(mw%size%grid%all,1) .ne. 11) print *,'ERROR'
 
 end subroutine sub3
