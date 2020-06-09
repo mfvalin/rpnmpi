@@ -51,6 +51,15 @@ interface
     type(RPN_MPI_Comm), intent(IN) :: COMM
     integer, intent(OUT) :: IERROR
   end subroutine MPI_Barrier
+  subroutine MPI_Bcast(BUF, COUNT, DATATYPE, ROOT, COMM, IERROR)
+    import :: RPN_MPI_Comm, RPN_MPI_Datatype, RPN_MPI_Loc
+    implicit none
+    type(RPN_MPI_Loc), intent(IN), value :: BUF
+    integer, intent(IN) :: COUNT, ROOT
+    type(RPN_MPI_Datatype), intent(IN) :: DATATYPE
+    type(RPN_MPI_Comm), intent(IN) :: COMM
+    integer, intent(OUT) :: IERROR
+  end subroutine MPI_Bcast
   subroutine MPI_Comm_split(COMM, COLOR, KEY, NEWCOMM, IERROR)
     import :: RPN_MPI_Comm
     implicit none

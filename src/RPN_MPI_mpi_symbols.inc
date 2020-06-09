@@ -23,13 +23,19 @@
 !
 ! RPN_MPI wrappers equivalent MPI wrapped derived types (used to enforce interfaces)
 !
-  type, BIND(C) :: RPN_MPI_Loc
+  type, BIND(C) :: RPN_MPI_Loc     ! wrapped generic array address
     integer(C_INTPTR_T) :: a
   end type
 
   type, BIND(C) :: RPN_MPI_Comm
     integer :: wrapped_value
   end type RPN_MPI_Comm
+
+  type, BIND(C) :: RPN_MPI_Fcom    ! the Fortran comm trio, communicator, size, and rank
+    type(RPN_MPI_Comm) :: comm
+    integer(C_INT)     :: size
+    integer(C_INT)     :: rank
+  end type RPN_MPI_Fcom
 
   type, BIND(C) :: RPN_MPI_Datatype
     integer :: wrapped_value

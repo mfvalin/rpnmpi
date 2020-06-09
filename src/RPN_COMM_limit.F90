@@ -165,6 +165,7 @@ end
 !              (useful only if more PEs than points)
 !          3 : tiles with same length possibly followed by ONE shorter tile 
 !              possibly followed by ONE or MORE zero size tiles
+!          4 : spread as evenly as possible, consecutive tiles may not have same length
 !
 ! Notes
 !     this function is totally stand alone and could eventually be moved into the rmnlib library
