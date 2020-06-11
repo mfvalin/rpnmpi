@@ -77,7 +77,7 @@ subroutine rpn_mpi_test_101
 999 continue
   print *,"ERROR in arguments",ierr
   go to 777
-  return
+
 end subroutine rpn_mpi_test_101
 
 subroutine Userinit
