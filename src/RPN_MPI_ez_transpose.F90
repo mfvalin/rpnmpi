@@ -188,15 +188,16 @@ end module RPN_MPI_transpose_mod
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
-! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lnix,lnjy,*), intent(INOUT)      :: z      ! NO HALO in arrays 
-  integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
 ! ARGUMENTS
 !! ! RPN_MPI_Loc is essentially the address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lnix, lnjy, lnkx                       !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
+! IGNORE
+! little white lie in interface, z, zt are advertised as addresses passed by value
+  integer, dimension(lnix,lnjy,*), intent(INOUT)      :: z      ! NO HALO in arrays 
+  integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
 !******
 
   ierr = MPI_ERROR
@@ -242,9 +243,6 @@ end module RPN_MPI_transpose_mod
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
-! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lnix,lnjy,gnk), intent(INOUT)    :: z      ! NO HALO in arrays 
-  integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
 ! ARGUMENTS
 !! ! RPN_MPI_Loc is essentially the address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
@@ -252,6 +250,10 @@ end module RPN_MPI_transpose_mod
   integer, intent(IN) :: lnix, lnjy, gnk, lnkx                  !InTf!
   integer, intent(IN) :: row_comm                               !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
+! IGNORE
+! little white lie in interface, z, zt are advertised as addresses passed by value
+  integer, dimension(lnix,lnjy,gnk), intent(INOUT)    :: z      ! NO HALO in arrays 
+  integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
 !******
 
   integer :: n
@@ -308,15 +310,16 @@ end module RPN_MPI_transpose_mod
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
-! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 ! ARGUMENTS
 !! ! RPN_MPI_Loc is essentially the address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
+! IGNORE
+! little white lie in interface, z, zt are advertised as addresses passed by value
+  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
+  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 !******
 
   call RPN_MPI_transpose_xy(z, zt, forward, lniy, lnjy, lnkx, colcom, ierr)
@@ -363,9 +366,6 @@ end module RPN_MPI_transpose_mod
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
-! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 ! ARGUMENTS
 !! ! RPN_MPI_Loc is essentially the address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
@@ -373,6 +373,10 @@ end module RPN_MPI_transpose_mod
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!
   integer, intent(IN) :: col_comm                               !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
+! IGNORE
+! little white lie in interface, z, zt are advertised as addresses passed by value
+  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
+  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 !******
 
   integer :: n
