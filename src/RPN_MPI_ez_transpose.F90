@@ -78,9 +78,11 @@
 !                     ripple distributed tridiagonal solver along j
 !
 ! example of usage
+!
 !   include 'RPN_MPI.inc'
 ! ! macro names are CASE SENSITIVE
 ! #define LoC(what) rpn_mpi_loc(loc(what))
+!
 !   integer(kind=8), dimension(:,:,:), allocatable   :: z, z2
 !   integer(kind=8), dimension(:,:,:,:), allocatable :: zt, zy, zty
 !   integer :: row_comm, col_comm        

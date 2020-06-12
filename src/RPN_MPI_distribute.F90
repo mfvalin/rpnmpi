@@ -21,7 +21,7 @@
 !InTf!
 !****f* RPN_COMM/RPN_data_distribute
 ! SYNOPSIS
-subroutine RPN_data_distribute(myrank, npe, gmin, gmax, lmin, lmax, count, offset, mode)    !InTf!
+ subroutine RPN_data_distribute(myrank, npe, gmin, gmax, lmin, lmax, count, offset, mode)    !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2015
 ! IGNORE
@@ -122,4 +122,4 @@ subroutine RPN_data_distribute(myrank, npe, gmin, gmax, lmin, lmax, count, offse
   lmax = lmin + count(myrank + 1) -1        ! count indexing is in origin 1
   lmax = min(gmax, lmax)                    ! this should NEVER happen
   return
-end subroutine RPN_data_distribute                               !InTf!
+ end subroutine RPN_data_distribute                               !InTf!
