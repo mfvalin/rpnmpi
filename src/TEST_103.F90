@@ -5,18 +5,12 @@ subroutine rpn_mpi_test_103
 !
   use ISO_C_BINDING
   implicit none
-!   include 'mpif.h'
+#define LoC(what) rpn_mpi_loc(loc(what))
   include 'RPN_MPI.inc'
   include 'RPN_MPI_mpif.inc'
-!   interface
-!     subroutine RPN_MPI_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo')
-!       import :: RPN_MPI_Loc, C_INTPTR_T, RPN_MPI_Comm
-!       integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
-! !       integer, intent(IN)    :: row,col
-!       type(RPN_MPI_Comm), intent(IN)    :: row,col
-!       type(RPN_MPI_Loc), intent(IN), value :: g
-!     end subroutine RPN_MPI_halo
-!   end interface
+
+  type(RPN_MPI_mpi_definitions)     :: d
+  type(RPN_MPI_mpi_definitions_raw) :: dr
   type(RPN_MPI_Comm) :: col_comm, row_comm
   type(RPN_MPI_Loc) :: p
   integer, parameter :: NXCH = 100
@@ -30,11 +24,9 @@ subroutine rpn_mpi_test_103
   logical :: printit, redblack, yfirst, async, barrier
   real(kind=8) :: t1, t2
   real(kind=8), dimension(NXCH) :: txch
-  type(RPN_MPI_mpi_definitions)     :: d
-  type(RPN_MPI_mpi_definitions_raw) :: dr
 
   call MPI_Init(ier)
-  call RPN_MPI_get_mpi_definitions(d, ier)       ! get wrapped definitions
+  call RPN_MPI_get_mpi_definitions(d, ier)       ! get wrapped definitions (for calls to MPI routines)
   call RPN_MPI_get_mpi_definitions_raw(dr, ier)  ! get "raw" definitions
   printit = .false.
   call get_command_argument(1,argv1,larg1,stat1)
@@ -68,8 +60,13 @@ subroutine rpn_mpi_test_103
   if(sizex*sizey .ne. petot) goto 777
 !   if(ranktot == 0) write(6,*)'redblack =',redblack
   if(ranktot == 0) write(6,2)'sizex,sizey,NI,NJ,NK,halox,haloy=',sizex,sizey,NI,NJ,NK,halox,haloy
+! storage_size(d) not equal to storage_size(dr) is an ERROR
   if(ranktot == 0) write(6,2)'storage size of RPN_MPI_mpi_definitions and RPN_MPI_mpi_definitions =', &
        storage_size(d), storage_size(dr)
+  if(storage_size(d) .ne. storage_size(dr)) then
+    write(6,*) 'ERROR: storage size of wrapped types is not equal to storage size of "raw" types'
+    goto 777
+  endif
   if(yfirst) then
     rankx = ranktot / sizey
     ranky = mod(ranktot,sizey)
@@ -111,7 +108,8 @@ subroutine rpn_mpi_test_103
   p%a = loc(z)                             ! address of array subject to halo exchange
 !   row_comm = RPN_MPI_Comm(rowcomm)
 !   col_comm = RPN_MPI_Comm(colcomm)
-  call RPN_MPI_halo(RPN_MPI_Loc(loc(z)),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
+  call RPN_MPI_ez_halo(LoC(z),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy)
+  call RPN_MPI_halo(LoC(z),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
   call RPN_MPI_reset_halo_timings          ! ignore timings for first call
   call MPI_Barrier(d%MPI_COMM_WORLD,ier)     ! full sync
 
@@ -119,7 +117,7 @@ subroutine rpn_mpi_test_103
     call MPI_Barrier(d%MPI_COMM_WORLD,ier)
     t1 = MPI_Wtime()
     p%a = loc(z)
-    call RPN_MPI_halo(RPN_MPI_Loc(loc(z)),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
+    call RPN_MPI_halo(LoC(z),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
     txch(i) = MPI_Wtime() - t1
   enddo
   txch = txch * 1000000   ! convert into microseconds

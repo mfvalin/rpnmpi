@@ -1,20 +1,123 @@
-! * Copyright (C) 2020  Recherche en Prevision Numerique
-! *
-! * This software is free software; you can redistribute it and/or
-! * modify it under the terms of the GNU Lesser General Public
-! * License as published by the Free Software Foundation,
-! * version 2.1 of the License.
-! *
-! * This software is distributed in the hope that it will be useful,
-! * but WITHOUT ANY WARRANTY; without even the implied warranty of
-! * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-! * Lesser General Public License for more details.
+!/! RPN_MPI - Library of useful routines for C and FORTRAN programming
+! ! Copyright (C) 1975-2020  Division de Recherche en Prevision Numerique
+! !                          Environnement Canada
+! !
+! ! This library is free software; you can redistribute it and/or
+! ! modify it under the terms of the GNU Lesser General Public
+! ! License as published by the Free Software Foundation,
+! ! version 2.1 of the License.
+! !
+! ! This library is distributed in the hope that it will be useful,
+! ! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+! ! Lesser General Public License for more details.
+! !
+! ! You should have received a copy of the GNU Lesser General Public
+! ! License along with this library; if not, write to the
+! ! Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+! ! Boston, MA 02111-1307, USA.
+! !/
 !====================================================================================================
+! RED/BLACK method uses only synchronous send and recv
+!   West -> East move
+!     EVEN PEs
+!       if not East PE send to odd PE at East 
+!       if not West PE recv from odd PE at West 
+!     ODD PEs
+!                      recv from even PE at West
+!       if not East PE send to even PE at East
+!   West <- East move
+!     EVEN PEs
+!       if not East PE recv from odd PE at East
+!       if not West PE send to odd PE at West
+!     ODD PEs
+!                      send to even PE at West
+!       if not East PE recv from even PE at East
+!****P* rpn_mpi/halo  halo exchange routines
+! DESCRIPTION
+! these routines are used to perform a halo exchange between members of a "grid"
+! an internal timing package keeps timing statistics about the various phases of the exchnage
+!
+!  +=======================================================================================+___maxy
+!  I       <halox>                                                           <halox>       I
+!  I +-----+-----------------------------------------------------------------------+-----+ I
+!  I :     :                                    |                                  :     : I
+!  I :  C  :                                  haloy                                :  C  : I
+!  I :     :                                    |                                  :     : I
+!  I +-----+=====+===========================================================+=====+-----: I___nj
+!  I :     I     :                              |                            :     I     : I
+!  I :     I     :                            haloy                          :     I     : I
+!  I :     I     :                              |                            :     I     : I
+!  I :-----+-----+-----------------------------------------------------------+-----+-----: I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :-----+-----+-----------------------------------------------------------+-----+-----: I
+!  I :     I     :                              |                            :     I     : I
+!  I :     I     :                            haloy                          :     I     : I
+!  I :     I     :                              |                            :     I     : I
+!  I +-----+=====+===========================================================+=====+-----: I___1
+!  I :     :                                    |                                  :     : I
+!  I :  C  :                                  haloy                                :  C  : I
+!  I :     :                                    |                                  :     : I
+!  I +-----+-----------------------------------------------------------------------+-----+ I
+!  I <halox>                                                                       <halox> I
+!  +=======================================================================================+___miny
+!  |       |                                                                       |       |
+!  |       |                                                                       |       |
+!  |       1                                                                       ni      |
+!  minx                                                                                 maxx
+!
+!  the "useful" section of the array is array(i,j) where 1 <= i <= ni, 1 <= j < nj
+!  the "inner" halo is the halo part inside the "useful" section of the array (1:ni,1:nj)
+!  the "outer" halo is the halo part outside the "useful" section of the array (1:ni,1:nj)
+!  part of the array may be outside of the "outer" halo. that part will be left as is
+!
+!  a East-West (x direction) exchange is performed first, for rows 1 thru nj
+!  a North-South (y direction) exchange will follow, for columns 1-halox thru ni+halox
+!
+!  the corner parts (C) get implicitly exchanged with the corner neighbors during tne North-South phase
+!  (this achieves the 2D exchange with 8 neighbors using only 4 messages)
+!
+! example of usage
+!
+!   include 'RPN_MPI.inc'
+! ! macro names are CASE SENSITIVE
+! #define LoC(what) rpn_mpi_loc(loc(what))
+! real, dimension(:,:,:), allocatable :: z
+! type(RPN_MPI_Comm) :: col_comm, row_comm
+! integer :: halox, haloy, NI,NJ,NK
+!
+! allocate (z(1-halox:NI+halox,1-haloy:NJ+haloy,NK))
+!
+! call RPN_MPI_ez_halo_parms(row_comm, col_comm, 'BARRIER')
+! call RPN_MPI_ez_halo(LoC(z),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy)
+! call RPN_MPI_halo(LoC(z),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
+!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
 module RPN_MPI_halo_cache
   use ISO_C_BINDING
   use rpn_mpi_mpif
   implicit none
-!   include 'mpif.h'
   include 'RPN_MPI_system_interfaces.inc'
   integer, parameter :: NTS = 9
   integer(kind=8), dimension(NTS) :: ts = [0,0,0,0,0,0,0,0,0]   ! timing points
@@ -29,12 +132,32 @@ contains
 ! an interface will be needed to use RPN_MPI_halo
 ! the published interface will use the "void *" approach
 !
+!****f* rpn_mpi/RPN_MPI_halo halo exchange for 4 byte items
+! DESCRIPTION
+! this routine will perform a horizontal halo exchange with NO PERIODIC BOUNDARY conditions 
+! for all "planes" of a "grid"
+!
+! row         : RPN_MPI communicator for the grid row this PE belongs to
+! col         : RPN_MPI communicator for the grid column this PE belongs to
+! minx, maxx, miny, maxy : horizontal(plane) dimensions of array pointed to by g
+! nk          : vertical dimension of array pointed to by g
+! lni, lnj    : "useful" horizontal dimensions of array pointed to byy g
+! halox       : number of "halo" points along x
+! haloy       : number of "halo" points along y
+! g           : address (wrapped) of array
+!
+! SYNOPSIS
  subroutine RPN_MPI_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo') !InTf!
+! IGNORE
   implicit none
 !! import :: RPN_MPI_Loc, RPN_MPI_Comm, C_INT                                          !InTf!
+! ARGUMENTS
   integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
 !! type(RPN_MPI_Comm), intent(IN) :: row,col                                           !InTf!
 !! type(RPN_MPI_Loc), intent(IN), value :: g                                           !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
 ! white lie in published interface, g is published as an address passed by value
   integer, intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
   integer, intent(IN)    :: row,col
@@ -143,13 +266,23 @@ contains
   return
  end subroutine RPN_MPI_halo                                               !InTf!
 
+!****f* rpn_mpi/RPN_MPI_halo8 8 byte version of RPN_MPI_halo
+! DESCRIPTION
+! see RPN_MPI_halo. (array subject to halo exchange is made of 8 byte items)
+!
+! SYNOPSIS
  subroutine RPN_MPI_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo8')  !InTf!
+! IGNORE
   use ISO_C_BINDING
   implicit none
 !! import :: RPN_MPI_Loc, RPN_MPI_Comm, C_INT                                          !InTf!
+! ARGUMENTS
   integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
 !! type(RPN_MPI_Comm), intent(IN) :: row,col                                           !InTf!
 !! type(RPN_MPI_Loc), intent(IN), value :: g                                           !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
 ! white lie in published interface, g is published as an address passed by value
   integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
   integer, intent(IN)    :: row,col
@@ -158,13 +291,24 @@ contains
   return
  end subroutine RPN_MPI_halo8                                                           !InTf!
 
+!****f* rpn_mpi/RPN_MPI_ez_halo grid halo exchange for 4 byte items
+! DESCRIPTION
+! same functionality as RPN_MPI_halo, communicators are implicit
+! (a previous call to RPN_MPI_ez_halo_parms may be needed)
+!
+! SYNOPSIS
  subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo')       !InTf!
+! IGNORE
   use ISO_C_BINDING
   implicit none
 !!  import :: RPN_MPI_Loc                                                       !InTf!
+! ARGUMENTS
   integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
+!! type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
 ! white lie in published interface, g is published as an address passed by value
-!!  type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
   integer, intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
 
   if(rowcom == MPI_COMM_NULL .or. colcom == MPI_COMM_NULL) then
@@ -175,25 +319,47 @@ contains
   return
  end subroutine RPN_MPI_ez_halo                                                  !InTf!
 
- subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo_8')     !InTf!
+!****f* rpn_mpi/RPN_MPI_ez_halo_8 8 byte version of RPN_MPI_ez_halo
+! DESCRIPTION
+! same functionality as RPN_MPI_halo8, communicators are implicit
+! (a previous call to RPN_MPI_ez_halo_parms may be needed)
+!
+! SYNOPSIS
+ subroutine RPN_MPI_ez_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo8')     !InTf!
+! IGNORE
   use ISO_C_BINDING
   implicit none
 !!  import :: RPN_MPI_Loc                                                       !InTf!
+! ARGUMENTS
   integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
+!! type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
 ! white lie in published interface, g is published as an address passed by value
-!!  type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
   integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
   call RPN_MPI_ez_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
- end subroutine RPN_MPI_ez_halo_8                                                !InTf!
+ end subroutine RPN_MPI_ez_halo8                                                !InTf!
 end module RPN_MPI_halo_cache
 !====================================================================================================
 
+!****f* rpn_mpi/RPN_MPI_get_halo_timings get a copy of the current timing stats
+! DESCRIPTION
+! t      : array of 64 bit integers to receive timing stats
+! n      : dimension of array t
+! function value : number of halo exchanges performed since last stats reset
+! SYNOPSIS
  function RPN_MPI_get_halo_timings(t,n) result(nt) BIND(C,name='RPN_MPI_get_halo_timings')   !InTf!
+! IGNORE
   use RPN_MPI_halo_cache
   implicit none
+! ARGUMENTS
   integer, intent(IN) :: n                                                                  !InTf!
   integer(kind=8), dimension(n), intent(OUT) :: t                                           !InTf!
   integer :: nt                                                                             !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
   t(1:n) = -1
   nt = -1
   if(n < NTS) return
@@ -202,7 +368,12 @@ end module RPN_MPI_halo_cache
   return
  end function RPN_MPI_get_halo_timings                                                       !InTf!
 
+!****f* rpn_mpi/RPN_MPI_reset_halo_timings reset timing stats
+! SYNOPSIS
  subroutine RPN_MPI_reset_halo_timings() BIND(C,name='RPN_MPI_reset_halo_timings')   !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
   use RPN_MPI_halo_cache
   implicit none
   nhalo = 0
@@ -210,7 +381,12 @@ end module RPN_MPI_halo_cache
   return
  end subroutine RPN_MPI_reset_halo_timings                                           !InTf!
 
+!****f* rpn_mpi/RPN_MPI_print_halo_timings print accumulated timing stats
+! SYNOPSIS
  subroutine RPN_MPI_print_halo_timings() BIND(C,name='RPN_MPI_print_halo_timings')   !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
   use RPN_MPI_halo_cache
   implicit none
   integer(kind=8), dimension(:,:), allocatable :: alltsx, allts
@@ -254,13 +430,25 @@ end module RPN_MPI_halo_cache
  end subroutine RPN_MPI_print_halo_timings                                           !InTf!
 
 ! set information for halo exchange timings
+!****f* rpn_mpi/RPN_MPI_ez_halo_parms setup call for ez_halo routines
+! DESCRIPTION
+! row         : RPN_MPI communicator for the grid row this PE belongs to
+! col         : RPN_MPI communicator for the grid column this PE belongs to
+! mode == 'B' : add a MPI_Barrier call between the x and y phases of the exchange
+!               (used for timing purposes)
+! SYNOPSIS
  subroutine RPN_MPI_ez_halo_parms(row, col, mode) bind(C,name='RPN_MPI_ez_halo_parms')     !InTf!
+! IGNORE
   use RPN_MPI_halo_cache
   implicit none
 !!  import :: RPN_MPI_Comm                                  !InTf!
-!!  type(RPN_MPI_Comm), intent(IN) :: row, col              !InTf!
+! ARGUMENTS
+!! type(RPN_MPI_Comm), intent(IN) :: row, col               !InTf!
   integer, intent(IN) :: row, col
   character(len=1), dimension(*), intent(IN) :: mode        !InTf!
+! AUTHOR
+!  M.Valin Recherche en Prevision Numerique 2020
+!******
   integer :: ier
   rowcom  = row   ! row communicator
   colcom  = col   ! column communicator
@@ -274,19 +462,3 @@ end module RPN_MPI_halo_cache
   if(rankx+ranky == 0 .and. barrier) write(6,*) 'MODE = BARRIER'
   return
  end subroutine RPN_MPI_ez_halo_parms                        !InTf!
-
-! RED/BLACK method uses only synchronous send and recv
-!   West -> East move
-!     EVEN PEs
-!       if not East PE send to odd PE at East 
-!       if not West PE recv from odd PE at West 
-!     ODD PEs
-!                      recv from even PE at West
-!       if not East PE send to even PE at East
-!   West <- East move
-!     EVEN PEs
-!       if not East PE recv from odd PE at East
-!       if not West PE send to odd PE at West
-!     ODD PEs
-!                      send to even PE at West
-!       if not East PE recv from even PE at East
