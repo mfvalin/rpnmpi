@@ -193,7 +193,7 @@ end module RPN_MPI_halo_cache
   implicit none
   integer, intent(IN) :: n                                                                  !InTf!
   integer(kind=8), dimension(n), intent(OUT) :: t                                           !InTf!
-  integer :: nt
+  integer :: nt                                                                             !InTf!
   t(1:n) = -1
   nt = -1
   if(n < NTS) return
