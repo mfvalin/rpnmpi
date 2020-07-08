@@ -31,11 +31,29 @@
     integer :: wrapped_value
   end type RPN_MPI_Comm
 
-  type, BIND(C) :: RPN_MPI_Fcom    ! the Fortran comm trio, communicator, size, and rank
+  type, BIND(C) :: RPN_MPI_Fcom    ! the Fortran trio, wrapped communicator, size, and rank
     type(RPN_MPI_Comm) :: comm
     integer(C_INT)     :: size
     integer(C_INT)     :: rank
   end type RPN_MPI_Fcom
+
+  type, BIND(C) :: RPN_MPI_Fgrid   ! 2D grid with RPNMPI (wrapped) communicators
+    type(RPN_MPI_Fcom) :: grd      ! the 2D grid
+    type(RPN_MPI_Fcom) :: row      ! the grid row
+    type(RPN_MPI_Fcom) :: col      ! the grid column
+  end type RPN_MPI_Fgrid
+
+  type, BIND(C) :: RPN_MPI_csr     ! the Fortran trio, communicator, size, and rank
+    integer(C_INT)     :: comm
+    integer(C_INT)     :: size
+    integer(C_INT)     :: rank
+  end type RPN_MPI_csr
+
+  type, BIND(C) :: RPN_MPI_grid    ! 2D grid with integer MPI communicators
+    type(RPN_MPI_csr) :: grd       ! the 2D grid
+    type(RPN_MPI_csr) :: row       ! the grid row
+    type(RPN_MPI_csr) :: col       ! the grid column
+  end type RPN_MPI_grid
 
   type, BIND(C) :: RPN_MPI_Datatype
     integer :: wrapped_value
