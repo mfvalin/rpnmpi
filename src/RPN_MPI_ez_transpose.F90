@@ -70,8 +70,8 @@
 !                         |                                  ^
 !                         |                                  |
 !                         v                                  |
-! forward FFT(x) <------> dimension(gni,      lnjy,      lnkx)  <------> inverse FFT(x)
-!                             [ SHARED MEMORY on NUMA node]
+! forward FFT(x) <------> dimension(gni,  lnjy,  nnuma,  lnkx)  <------> inverse FFT(x)
+!                       [ SHARED MEMORY on NUMA node] (nnuma PEs)
 !                                            ^
 !                                            |
 !                                            v
