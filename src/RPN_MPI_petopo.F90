@@ -309,7 +309,7 @@
       use RPN_MPI
       implicit none                                                !InTf!
       integer, intent(IN) :: x,y,grd,sgrd                          !InTf!
-      character (len=*), intent(IN) :: communicator                   !InTf!
+      character (len=*), intent(IN) :: communicator                !InTf!
 
       integer ordinal
 
@@ -345,4 +345,15 @@
 
       RPN_MPI_get_pe = ordinal
       return
-      end function RPN_MPI_get_pe                              !InTf!
+      end function RPN_MPI_get_pe                                  !InTf!
+!
+!     legacy function for use by rpn_comm routines, calls RPN_MPI_get_pe
+!
+      integer function RPN_COMM_get_pe(x,y,grd,sgrd,communicator)  !InTf!
+      implicit none                                                !InTf!
+      integer, intent(IN) :: x,y,grd,sgrd                          !InTf!
+      character (len=*), intent(IN) :: communicator                !InTf!
+
+      integer, external :: RPN_MPI_get_pe
+      RPN_COMM_get_pe = RPN_MPI_get_pe(x,y,grd,sgrd,communicator)
+      end function RPN_COMM_get_pe                                 !InTf!
