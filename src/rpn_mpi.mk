@@ -30,8 +30,8 @@ LIBRARY  = $(LIBDIR)/lib$(LIBNAME).a
 STUB_LIBRARY = $(LIBDIR)/lib$(LIB)stubs_$(RPN_MPI_version)$(MPI_VERSION).a
 SOURCES  = $(INCDECKS) $(CDECKS) $(FDECKS) $(HDECKS) $(F90DECKS)
 
-DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.hf $(VPATH)/RPN_MPI.inc $(VPATH)/RPN_MPI.hf \
-               $(VPATH)/RPN_MPI_types.inc $(VPATH)/RPN_MPI_constants.inc \
+DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.hf $(VPATH)/RPN_MPI.hf \
+               $(VPATH)/RPN_MPI_types.inc $(VPATH)/RPN_COMM_constants.inc \
                $(VPATH)/RPN_MPI_ftoc.inc $(VPATH)/RPN_MPI_is_null.inc \
                $(VPATH)/RPN_MPI_mpi_layout.inc $(VPATH)/RPN_MPI_mpi_symbols.inc \
                $(VPATH)/RPN_MPI_mpi_definitions.inc $(VPATH)/RPN_MPI_mpif.inc \
@@ -74,6 +74,10 @@ itf: $(VPATH)/RPN_MPI_interfaces.hf
 $(VPATH)/RPN_MPI_ptr.F90: $(VPATH)/../tools/gen_RPN_MPI_ptr.sh
 	(cd $(VPATH) ; ../tools/gen_RPN_MPI_ptr.sh >$(VPATH)/RPN_MPI_ptr.F90)
 
+#       extract InTfX minimalist interfaces first, then add InTf tagged interfaces
+#       a .hf file is produced, included with #inclide <RPN_MPI_interfaces.hf>
+#       #define IN_RPN_MPI_xxx 
+#       allows to avoid conflict with functions/subroutines in source file RPN_MPI_xxx.F90
 $(VPATH)/RPN_MPI_interfaces.hf: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPATH)/RPN_*.c)
 	(cd $(VPATH) ; rm -f RPN_MPI_interfaces.hf;)
 	(cd $(VPATH) ; \
