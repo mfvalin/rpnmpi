@@ -79,7 +79,7 @@
 !
 ! example of usage
 !
-!   include 'RPN_MPI.inc'
+! #include 'RPN_MPI.hf'
 ! ! macro names are CASE SENSITIVE
 ! #define LoC(what) rpn_mpi_loc(loc(what))
 !

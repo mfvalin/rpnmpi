@@ -3,7 +3,7 @@ subroutine rpn_mpi_test_100
 ! especially when adding the MPI prototypes using RPN_MPI wrappers
   use ISO_C_BINDING
   implicit none
-  include 'RPN_MPI.inc'
+#include <RPN_MPI.hf>
   include 'RPN_MPI_mpif.inc'
   print *,'INFO: compilation/load is O.K.'
   print *,'INFO: this is a non MPI test'
@@ -80,7 +80,7 @@ end subroutine sub2
 !  example of "user" code
 !  uses the access functions,
 !  the prototypes of which are obtained from include files
-!  RPN_MPI.inc       for the RPN_MPI library prototypes
+!  RPN_MPI.hf        for the RPN_MPI library prototypes
 !  RPN_MPI_mpif.inc  for the MPI function prototypes using RPN_MPI wrappers
 !============================================================================
 subroutine sub3
@@ -88,7 +88,7 @@ subroutine sub3
 ! obtained using RPN_MPI_get_mpi_.... subroutines
   use ISO_C_BINDING
   implicit none
-  include 'RPN_MPI.inc'
+#include <RPN_MPI.hf>
   include 'RPN_MPI_mpif.inc'
   type(RPN_MPI_mpi_definitions_raw) :: dr  ! "raw" MPI symbols
   type(RPN_MPI_mpi_definitions)     :: dw  ! "wrapped" MPI symbols

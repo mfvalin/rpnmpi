@@ -213,8 +213,9 @@ end module RPN_MPI_mod_grid_topo
   use rpn_mpi_mpif
   implicit none
   include 'RPN_MPI_mpi_symbols.inc'
-!! import :: RPN_MPI_Fgrid                             !InTf!
-  type(RPN_MPI_Fgrid), intent(INOUT) :: grid           !InTf!
+  include 'RPN_MPI_mpi_layout.inc'
+!! import :: RPN_MPI_Ftopo                             !InTf!
+  type(RPN_MPI_Ftopo), intent(INOUT) :: grid           !InTf!
   integer, intent(IN) :: npex, npey                    !InTf!
   integer, intent(IN) :: blkx, blky                    !InTf!
   logical, intent(IN) :: x_first                       !InTf!
@@ -233,6 +234,7 @@ end module RPN_MPI_mod_grid_topo
   if(ierr .ne. MPI_SUCCESS) return
 
   ierr = MPI_ERROR
+  if(grid%version .ne. mpi_symbols_version) return   ! RPN_MPI version mismatch
   if(npex*npey .ne. grid%grd%size) return       ! PE number mismatch
   if(mod(npex,blockx) .ne. 0)      return       ! npex not a multiple of blockx
   if(mod(npey,blocky) .ne. 0)      return       ! npey not a multiple of blocky
@@ -264,9 +266,11 @@ end module RPN_MPI_mod_grid_topo
 ! split grid communicator into row and column communicators
 ! members of a row have same rank in column (grid%col%rank)
 ! members of a column have same rank in row (grid%row%rank)
-!      MPI_COMM_SPLIT(COMM         , COLOR        , KEY          , NEWCOMM      , IERR)
-  call MPI_Comm_split(grid%grd%comm, grid%col%rank, grid%grd%rank, grid%row%comm, ierr)
-  call MPI_Comm_split(grid%grd%comm, grid%row%rank, grid%grd%rank, grid%col%comm, ierr)
+  if(grid%grd%comm%wrapped_value .ne. MPI_COMM_NULL) then
+!     	 MPI_COMM_SPLIT(COMM         , COLOR        , KEY          , NEWCOMM      , IERR)
+    call MPI_Comm_split(grid%grd%comm, grid%col%rank, grid%grd%rank, grid%row%comm, ierr)
+    call MPI_Comm_split(grid%grd%comm, grid%row%rank, grid%grd%rank, grid%col%comm, ierr)
+  endif
 
  end subroutine RPN_MPI_grid_topo                      !InTf!
  subroutine RPN_MPI_ez_grid_topo(grid, ierr)           !InTf!
@@ -275,9 +279,9 @@ end module RPN_MPI_mod_grid_topo
   use RPN_MPI_mod_grid_topo
   implicit none
 #define IN_RPN_MPI_grid_topo
-#include <RPN_MPI_int.hf>
-!! import :: RPN_MPI_Fgrid                            !InTf!
-  type(RPN_MPI_Fgrid), intent(INOUT) :: grid          !InTf!
+#include <RPN_MPI.hf>
+!! import :: RPN_MPI_Ftopo                            !InTf!
+  type(RPN_MPI_Ftopo), intent(INOUT) :: grid          !InTf!
   integer, intent(OUT) :: ierr                        !InTf!
 
   ierr = MPI_ERROR

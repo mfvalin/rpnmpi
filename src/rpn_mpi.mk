@@ -11,8 +11,8 @@ LIB      = RPN_MPI$(SERIAL)
 
 CLEAN    = RPN_MPI_fortran_stubs.F90 RPN_MPI_c_stubs.c mpi_stub.h \
            $(STUB_LIBRARY) $(LIBRARY) \
-           $(VPATH)/rpn-comm_$(RPN_MPI_version_s)_multi.ssm $(VPATH)/RPN_MPI_interfaces.inc \
-           $(VPATH)/RPN_MPI_interfaces_int.hf $(VPATH)/dependencies.mk $(VPATH)/dependencies+.mk
+           $(VPATH)/rpn-comm_$(RPN_MPI_version_s)_multi.ssm \
+           $(VPATH)/RPN_MPI_interfaces.hf $(VPATH)/dependencies.mk $(VPATH)/dependencies+.mk
 
 CLEANDIRS= $(VPATH)/rpn-comm_$(RPN_MPI_version_s)_multi $(LIBDIR)
 
@@ -30,14 +30,14 @@ LIBRARY  = $(LIBDIR)/lib$(LIBNAME).a
 STUB_LIBRARY = $(LIBDIR)/lib$(LIB)stubs_$(RPN_MPI_version)$(MPI_VERSION).a
 SOURCES  = $(INCDECKS) $(CDECKS) $(FDECKS) $(HDECKS) $(F90DECKS)
 
-DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI.inc $(VPATH)/RPN_MPI.inc \
+DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.hf $(VPATH)/RPN_MPI.inc $(VPATH)/RPN_MPI.hf \
                $(VPATH)/RPN_MPI_types.inc $(VPATH)/RPN_MPI_constants.inc \
                $(VPATH)/RPN_MPI_ftoc.inc $(VPATH)/RPN_MPI_is_null.inc \
                $(VPATH)/RPN_MPI_mpi_layout.inc $(VPATH)/RPN_MPI_mpi_symbols.inc \
                $(VPATH)/RPN_MPI_mpi_definitions.inc $(VPATH)/RPN_MPI_mpif.inc \
                $(VPATH)/RPN_MPI_system_interfaces.inc
 
-ITF = $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI_interfaces_int.hf
+ITF = $(VPATH)/RPN_MPI_interfaces.hf
 
 lib: itf $(LIBRARY)
 
@@ -69,28 +69,24 @@ endif
 # special "library" that contains the include files
 inc: $(LIBRARY).inc
 
-itf: $(VPATH)/RPN_MPI_interfaces.inc $(VPATH)/RPN_MPI_interfaces_int.hf
+itf: $(VPATH)/RPN_MPI_interfaces.hf
 
 $(VPATH)/RPN_MPI_ptr.F90: $(VPATH)/../tools/gen_RPN_MPI_ptr.sh
 	(cd $(VPATH) ; ../tools/gen_RPN_MPI_ptr.sh >$(VPATH)/RPN_MPI_ptr.F90)
 
-$(VPATH)/RPN_MPI_interfaces.inc: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPATH)/RPN_*.c)
-	(cd $(VPATH) ; \
-	cat RPN_*.?90 | grep '!InTfX!' | sed 's/^!![ ]*/      /' >RPN_MPI_interfaces.inc )
-	(cd $(VPATH) ; \
-	cat RPN_*.?90 RPN_*.c | ../tools/extract_interface.sh >>RPN_MPI_interfaces.inc)
-
-$(VPATH)/RPN_MPI_interfaces_int.hf: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPATH)/RPN_*.c)
-	(cd $(VPATH) ; rm -f RPN_MPI_interfaces_int.hf;)
+$(VPATH)/RPN_MPI_interfaces.hf: $(wildcard $(VPATH)/RPN_*.?90) $(wildcard $(VPATH)/RPN_*.c)
+	(cd $(VPATH) ; rm -f RPN_MPI_interfaces.hf;)
 	(cd $(VPATH) ; \
 	for target in RPN_*.?90; \
 	do grep -q '!InTfX!' $$target || continue ; \
-	( echo "#if ! defined(IN_$${target%.*})" ; cat $$target | grep '!InTfX!' | sed 's/^!![ ]*/      /' ; echo "#endif" ) >>RPN_MPI_interfaces_int.hf ; \
+	( echo "#if ! defined(IN_$${target%.*})" ; cat $$target | grep '!InTfX!' | sed 's/^!![ ]*/      /' ; echo "#endif" ) >>RPN_MPI_interfaces.hf ; \
 	done;)
 	(cd $(VPATH) ; \
+	echo "interface" >> RPN_MPI_interfaces.hf ; \
 	for target in RPN_*.?90 RPN_MPI_*.c ; \
-	do ../tools/extract_interface.sh $$target >>RPN_MPI_interfaces_int.hf ; \
-	done; )
+	do ../tools/extract_interface.sh $$target >>RPN_MPI_interfaces.hf ; \
+	done; \
+	echo "end interface" >> RPN_MPI_interfaces.hf ; )
 
 # (re)build dependencies using perl script rdedep.pl
 $(VPATH)/dependencies.mk:
@@ -142,3 +138,6 @@ $(LIBRARY).inc: $(DISTINCLUDES)
 	ar rcv $(LIBRARY).inc $(DISTINCLUDES)
 	mkdir -p $(INCDIR)
 	cp $(DISTINCLUDES) $(INCDIR)
+
+tests_100 : itf $(LIBRARY)
+	(cd $(VPATH) ; for i in TEST_1??.F90 ; do make $${i%.*}.Abs ; done ; )

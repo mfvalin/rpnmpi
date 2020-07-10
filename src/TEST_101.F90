@@ -10,7 +10,7 @@ subroutine rpn_mpi_test_101
   use ISO_C_BINDING
   implicit none
   include 'mpif.h'
-  include 'RPN_MPI.inc'
+#include <RPN_MPI.hf>
   integer :: ierr, narg, arglen, rank, pop
   external :: Userinit
   integer :: Pelocal,Petotal,Pex,Pey,MultiGrids,Grids,Io
