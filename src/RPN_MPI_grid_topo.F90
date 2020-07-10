@@ -35,7 +35,7 @@
 !          x_first would have no impact in this case
 !          16 processes per node, 64 processes (00-63)
 !
-!  grid%col%rank  (node 2)               (node 3)
+!  topo%col%rank  (node 2)               (node 3)
 !         +----+----+----+----+  +----+----+----+----+
 !    7    | 44 | 45 | 46 | 47 |  | 60 | 61 | 62 | 63 |
 !         +----+----+----+----+  +----+----+----+----+
@@ -46,7 +46,7 @@
 !    4    | 32 | 33 | 34 | 35 |  | 48 | 49 | 50 | 51 |
 !         +----+----+----+----+  +----+----+----+----+
 !
-!  grid%col%rank  (node 0)              (node 1)
+!  topo%col%rank  (node 0)              (node 1)
 !         +----+----+----+----+  +----+----+----+----+
 !    3    | 12 | 13 | 14 | 15 |  | 28 | 29 | 30 | 31 |
 !         +----+----+----+----+  +----+----+----+----+
@@ -56,13 +56,13 @@
 !         +----+----+----+----+  +----+----+----+----+
 !    0    | 00 | 01 | 02 | 03 |  | 16 | 17 | 18 | 19 |
 !         +----+----+----+----+  +----+----+----+----+
-!            0    1    2    3    4    5    6    7    grid%row%rank
+!            0    1    2    3    4    5    6    7    topo%row%rank
 !---------------------------------------------------------------------
 !          8 by 8 model grid, blkx=2, blky=4,  (block fill)
 !          x_first would have no impact in this case
 !          16 processes per node, 64 processes (00-63)
 !
-!  grid%col%rank  (node 2)               (node 3)
+!  topo%col%rank  (node 2)               (node 3)
 !         +----+----+----+----+  +----+----+----+----+
 !    7    | 38 | 39 | 46 | 47 |  | 54 | 55 | 62 | 63 |
 !         +----+----+----+----+  +----+----+----+----+
@@ -83,13 +83,13 @@
 !         +----+----+----+----+  +----+----+----+----+
 !    0    | 00 | 01 | 08 | 09 |  | 16 | 17 | 24 | 25 |
 !         +----+----+----+----+  +----+----+----+----+
-!            0    1    2    3    4    5    6    7    grid%row%rank
+!            0    1    2    3    4    5    6    7    topo%row%rank
 !---------------------------------------------------------------------
 !          8 by 8 model grid, blkx=2, blky=2,  (block fill)
 !          x_first is .true.
 !          16 processes per node, 64 processes (00-63)
 !
-!  grid%col%rank
+!  topo%col%rank
 !         +----+----+----+----+----+----+----+----+
 !    7    | 50 | 51 | 54 | 55 | 58 | 59 | 62 | 63 |
 !         +----+----+----+----+----+----+----+----+ (node 3)
@@ -113,13 +113,13 @@
 !         +----+----+----+----+----+----+----+----+ (node 0)
 !    0    | 00 | 01 | 04 | 05 | 08 | 09 | 12 | 13 |
 !         +----+----+----+----++----+----+----+----+
-!            0    1    2    3    4    5    6    7    grid%row%rank
+!            0    1    2    3    4    5    6    7    topo%row%rank
 !---------------------------------------------------------------------
 !          8 by 8 model grid, blkx=2, blky=2,  (block fill)
 !          x_first is .false.
 !          16 processes per node, 64 processes (00-63)
 !
-!  grid%col%rank
+!  topo%col%rank
 !             (0)          (1)          (2)          (3)     (node)
 !         +----+----+  +----+----+  +----+----+  +----+----+
 !    7    | 13 | 15 |  | 29 | 31 |  | 45 | 47 |  | 61 | 63 |
@@ -138,14 +138,14 @@
 !         +----+----+  +----+----+  +----+----+  +----+----+
 !    0    | 00 | 02 |  | 16 | 18 |  | 32 | 34 |  | 48 | 50 |
 !         +----+----+  +----+----+  +----+----+  +----+----+
-!            0    1       2    3       4    5       6    7    grid%row%rank
+!            0    1       2    3       4    5       6    7    topo%row%rank
 !---------------------------------------------------------------------
 !          4 by 4 model grid, blkx=4, blky=1, (horizontal fill)
 !          x_first would have no impact in this case
 !          x_first = .true., blkx=1, blky=1 would yield the same result
 !          4 processes per node, 16 processes (00-15)
 !
-!  grid%col%rank
+!  topo%col%rank
 !         +----+----+----+----+
 !    3    | 12 | 13 | 14 | 15 | (node 3)
 !         +----+----+----+----+
@@ -158,13 +158,13 @@
 !         +----+----+----+----+
 !    0    | 00 | 01 | 02 | 03 | (node 0)
 !         +----+----+----+----+ 
-!            0    1    2    3     grid%row%rank
+!            0    1    2    3     topo%row%rank
 !   
 !          4 by 4 model grid, blkx=1, blky=4, (vertical fill)
 !          x_first = .false., blkx=1, blky=1 would yield the same result
 !          4 processes per node, 16 processes (00-15)
 !---------------------------------------------------------------------
-!  grid%col%rank
+!  topo%col%rank
 !           (0)     (1)     (2)     (3)   (node) 
 !         +----+  +----+  +----+  +----+
 !    3    | 03 |  | 07 |  | 11 |  | 15 |
@@ -175,7 +175,7 @@
 !         +----+  +----+  +----+  +----+
 !    0    | 00 |  | 04 |  | 08 |  | 12 |
 !         +----+  +----+  +----+  +----+ 
-!            0       1       2       3    grid%row%rank
+!            0       1       2       3    topo%row%rank
 !
 ! internal data for RPN_MPI_ez_grid_topo
 module RPN_MPI_mod_grid_topo
@@ -206,16 +206,24 @@ end module RPN_MPI_mod_grid_topo
 ! if blky is larger than npey, it is set internally to npey
 ! e.g. blky = 999999999 means go along the full column (npey)
 !      blkx = 999999999 means go along the full row (npex)
-! if all goes well, ierr = MPI_OK
+! if all goes well, ierr = MPI_OK, 
+! the row and column communicators, sizes, and ranks have been set properly
 !
- subroutine RPN_MPI_grid_topo(grid, npex, npey, blkx, blky, x_first, ierr)   !InTf!
+! if topo%grd%comm is MPI_COMM_NULL, the row and column communicators
+! are set to MPI_COMM_NULL, but the topology is computed according to input
+! number of PEs is taken from topo%grd%size, and rank from topo%grd%rank
+! this can be useful to check the grid distribution across PEs (and for internal tests)
+!
+! CAVEAT: except if topo%grd%comm is MPI_COMM_NULL this routine is a COLLECTIVE operator
+! in the topo%grd%comm communicator
+ subroutine RPN_MPI_grid_topo(topo, npex, npey, blkx, blky, x_first, ierr)   !InTf!
   use ISO_C_BINDING
   use rpn_mpi_mpif
   implicit none
   include 'RPN_MPI_mpi_symbols.inc'
   include 'RPN_MPI_mpi_layout.inc'
 !! import :: RPN_MPI_Ftopo                             !InTf!
-  type(RPN_MPI_Ftopo), intent(INOUT) :: grid           !InTf!
+  type(RPN_MPI_Ftopo), intent(INOUT) :: topo           !InTf!
   integer, intent(IN) :: npex, npey                    !InTf!
   integer, intent(IN) :: blkx, blky                    !InTf!
   logical, intent(IN) :: x_first                       !InTf!
@@ -227,24 +235,25 @@ end module RPN_MPI_mod_grid_topo
   blockx = min(blkx, npex)                      ! block size along x
   blocky = min(blky, npey)                      ! block size along y
 
-  if(grid%grd%size <= 0 .or. grid%grd%rank < 0) then        ! missing rank and/or size
-    call MPI_Comm_size(grid%grd%comm, grid%grd%size, ierr)  ! grep grid size
-    call MPI_Comm_rank(grid%grd%comm, grid%grd%rank, ierr)  ! grep rank in grid
+  if(topo%grd%size <= 0 .or. topo%grd%rank < 0) then        ! missing rank and/or size
+    call MPI_Comm_size(topo%grd%comm, topo%grd%size, ierr)  ! grep grid size
+    if(ierr .ne. MPI_SUCCESS) return
+    call MPI_Comm_rank(topo%grd%comm, topo%grd%rank, ierr)  ! grep rank in grid
+    if(ierr .ne. MPI_SUCCESS) return
   endif
-  if(ierr .ne. MPI_SUCCESS) return
 
   ierr = MPI_ERROR
-  if(grid%version .ne. mpi_symbols_version) return   ! RPN_MPI version mismatch
-  if(npex*npey .ne. grid%grd%size) return       ! PE number mismatch
+  if(topo%version .ne. mpi_symbols_version) return   ! RPN_MPI version mismatch
+  if(npex*npey .ne. topo%grd%size) return       ! PE number mismatch
   if(mod(npex,blockx) .ne. 0)      return       ! npex not a multiple of blockx
   if(mod(npey,blocky) .ne. 0)      return       ! npey not a multiple of blocky
 
   blocksize  = blockx*blocky
-  blocks     = grid%grd%size / blocksize        ! number of grid blocks
+  blocks     = topo%grd%size / blocksize        ! number of grid blocks
   blocksx    = npex / blockx                    ! number of grid blocks along x
   blocksy    = npey / blocky                    ! number of grid blocks along x
-  block_me   = grid%grd%rank / blocksize        ! my grid block ordinal
-  block_rank = mod(grid%grd%rank, blocksize)    ! my rank in my block
+  block_me   = topo%grd%rank / blocksize        ! my grid block ordinal
+  block_rank = mod(topo%grd%rank, blocksize)    ! my rank in my block
 
   if(x_first) then                              ! along X first for PE allocation
     block_x = mod(block_me, blocksx)            ! ordinal of my block along x
@@ -259,21 +268,24 @@ end module RPN_MPI_mod_grid_topo
     brank_x = block_rank / blocky               ! my ordinal along x in my block
   endif
 
-  grid%row%rank = block_x * blockx + brank_x    ! my rank in row (along X)
-  grid%row%size = npex                          ! size of row
-  grid%col%rank = block_y * blocky + brank_y    ! my rank in column (along y)
-  grid%col%size = npey                          ! size of column
+  topo%row%rank = block_x * blockx + brank_x    ! my rank in row (along X)
+  topo%row%size = npex                          ! size of row
+  topo%col%rank = block_y * blocky + brank_y    ! my rank in column (along y)
+  topo%col%size = npey                          ! size of column
 ! split grid communicator into row and column communicators
-! members of a row have same rank in column (grid%col%rank)
-! members of a column have same rank in row (grid%row%rank)
-  if(grid%grd%comm%wrapped_value .ne. MPI_COMM_NULL) then
+! members of a row have same rank in column (topo%col%rank)
+! members of a column have same rank in row (topo%row%rank)
+  if(topo%grd%comm%wrapped_value .ne. MPI_COMM_NULL) then
 !     	 MPI_COMM_SPLIT(COMM         , COLOR        , KEY          , NEWCOMM      , IERR)
-    call MPI_Comm_split(grid%grd%comm, grid%col%rank, grid%grd%rank, grid%row%comm, ierr)
-    call MPI_Comm_split(grid%grd%comm, grid%row%rank, grid%grd%rank, grid%col%comm, ierr)
+    call MPI_Comm_split(topo%grd%comm, topo%col%rank, topo%grd%rank, topo%row%comm, ierr)
+    call MPI_Comm_split(topo%grd%comm, topo%row%rank, topo%grd%rank, topo%col%comm, ierr)
+  else
+    topo%row%comm = RPN_MPI_Comm(MPI_COMM_NULL)
+    topo%col%comm = RPN_MPI_Comm(MPI_COMM_NULL)
   endif
 
  end subroutine RPN_MPI_grid_topo                      !InTf!
- subroutine RPN_MPI_ez_grid_topo(grid, ierr)           !InTf!
+ subroutine RPN_MPI_ez_grid_topo(topo, ierr)           !InTf!
   use ISO_C_BINDING
   use rpn_mpi_mpif
   use RPN_MPI_mod_grid_topo
@@ -281,9 +293,9 @@ end module RPN_MPI_mod_grid_topo
 #define IN_RPN_MPI_grid_topo
 #include <RPN_MPI.hf>
 !! import :: RPN_MPI_Ftopo                            !InTf!
-  type(RPN_MPI_Ftopo), intent(INOUT) :: grid          !InTf!
+  type(RPN_MPI_Ftopo), intent(INOUT) :: topo          !InTf!
   integer, intent(OUT) :: ierr                        !InTf!
 
   ierr = MPI_ERROR
-  call RPN_MPI_grid_topo(grid, pex, pey, bkx, bky, along_x, ierr)
+  call RPN_MPI_grid_topo(topo, pex, pey, bkx, bky, along_x, ierr)
  end subroutine RPN_MPI_ez_grid_topo                   !InTf!
