@@ -162,9 +162,8 @@
 
       return
       end subroutine RPN_MPI_set_petopo                  !InTf!
-!
-!     legacy function for use by rpn_comm routines
-!
+!InTf!
+!     legacy function for use by rpn_comm users
       integer function RPN_COMM_petopo(pex,pey)          !InTf!
       integer, intent(IN) :: pex,pey                     !InTf!
       integer, external :: RPN_MPI_petopo
@@ -172,7 +171,8 @@
       return
       end function RPN_COMM_petopo                       !InTf!
 !InTf!
-      integer function RPN_MPI_petopo(pex,pey)          !InTf!
+!     legacy functionality for use in rpn_comm to rpn_mpi conversion !InTf!
+      integer function RPN_MPI_petopo(pex,pey)           !InTf!
       use RPN_MPI
       implicit none                                      !InTf!
       integer, intent(IN) :: pex,pey                     !InTf!
@@ -294,6 +294,7 @@
 ! ========================================================================================
 !
 !InTf!
+!     legacy functionality for use in rpn_comm to rpn_mpi conversion !InTf!
       integer function RPN_MPI_get_pe(x,y,grd,sgrd,communicator) !InTf!
 !
 !     get PE ordinal in grid/supergrid/domain
@@ -346,9 +347,8 @@
       RPN_MPI_get_pe = ordinal
       return
       end function RPN_MPI_get_pe                                  !InTf!
-!
-!     legacy function for use by rpn_comm routines, calls RPN_MPI_get_pe
-!
+!InTf!
+!     legacy function for use by rpn_comm users, calls RPN_MPI_get_pe
       integer function RPN_COMM_get_pe(x,y,grd,sgrd,communicator)  !InTf!
       implicit none                                                !InTf!
       integer, intent(IN) :: x,y,grd,sgrd                          !InTf!
