@@ -2,3 +2,8 @@ objects.lst
 Transit
 Build
 lib
+include
+STAND_ALONE
+*.html
+*.orig*
+*.css
