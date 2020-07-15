@@ -11,11 +11,6 @@
 ! * but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ! * Lesser General Public License for more details.
-! *
-! * You should have received a copy of the GNU Lesser General Public
-! * License along with this library; if not, write to the
-! * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-! * Boston, MA 02111-1307, USA.
 ! */
 !InTf!
       integer function RPN_COMM_topo_2(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,relax,abort) !InTf!
@@ -59,17 +54,17 @@
 !       obtained from module rpn_comm
 !*
 !
-        integer gmin, gmax, ierr
-        integer count(pe_nx + pe_ny)
-        integer depl(pe_nx + pe_ny)
+      integer gmin, gmax, ierr
+      integer count(pe_nx + pe_ny)
+      integer depl(pe_nx + pe_ny)
       external RPN_COMM_limit_2
       integer RPN_COMM_limit_2
 !
-        if (alongx) then    ! distribute along X axis
-          ierr = RPN_COMM_limit_2(pe_mex, pe_nx, 1, nxg, gmin, gmax, count, depl,relax)
-        else                ! distribute along Y axis
-          ierr = RPN_COMM_limit_2(pe_mey, pe_ny, 1, nxg, gmin, gmax, count, depl,relax)
-        end if
+      if (alongx) then    ! distribute along X axis
+        ierr = RPN_COMM_limit_2(pe_mex, pe_nx, 1, nxg, gmin, gmax, count, depl,relax)
+      else                ! distribute along Y axis
+        ierr = RPN_COMM_limit_2(pe_mey, pe_ny, 1, nxg, gmin, gmax, count, depl,relax)
+      end if
 !
       if(ierr.ne.0) then
          write(rpn_u,*) 'RPN_COMM_topo: invalid distribution, ABORT'
@@ -82,16 +77,16 @@
            endif
       endif
 
-        nx0 = gmin              ! "tile" covers from nx0 to nxl in global space
-        minx = 1 - halo         ! "tile" dimension along this axis should be minx:maxx
-        nxl = gmax - gmin + 1
-        nxlmax = count(1)       ! first "tile" has the largest dimension (but may not be the only one)
-        maxx = nxlmax + halo
-        if(fill) maxx = maxx + 1 - mod(nxlmax,2)   ! this needs to be revised for cache based machines
+      nx0 = gmin              ! "tile" covers from nx0 to nxl in global space
+      minx = 1 - halo         ! "tile" dimension along this axis should be minx:maxx
+      nxl = gmax - gmin + 1
+      nxlmax = count(1)       ! first "tile" has the largest dimension (but may not be the only one)
+      maxx = nxlmax + halo
+      if(fill) maxx = maxx + 1 - mod(nxlmax,2)   ! this needs to be revised for cache based machines
 !
-        RPN_MPI_topology = 0     ! SUCCESS
-        return
-        end  function RPN_MPI_topology                     !InTf!
+      RPN_MPI_topology = 0     ! SUCCESS
+      return
+      end  function RPN_MPI_topology                     !InTf!
 !    this is the old function, it calls the newer RPN_MPI_topology forcing 
 !    the strict distribution mode used previously and abort in case of error
 !     kept for compatibility with older versions of this library
@@ -105,8 +100,8 @@
       integer, intent(in) :: nxg,halo                                              !InTf!
       logical, intent(in) :: alongx,fill                                           !InTf!
       integer, intent(out):: minx,maxx,nxl,nxlmax,nx0                              !InTf!
-        external RPN_MPI_topology
-        integer RPN_MPI_topology
-        RPN_COMM_topo=RPN_MPI_topology(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,0,.true.)
-        return
-        end function RPN_COMM_topo                                                 !InTf!
+      external RPN_MPI_topology
+      integer RPN_MPI_topology
+      RPN_COMM_topo=RPN_MPI_topology(nxg,minx,maxx,nxl,nxlmax,halo,nx0,alongx,fill,0,.true.)
+      return
+      end function RPN_COMM_topo                                                 !InTf!
