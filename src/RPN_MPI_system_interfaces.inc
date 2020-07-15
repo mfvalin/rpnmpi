@@ -25,6 +25,15 @@ interface
     import :: C_CHAR
     character(C_CHAR), dimension(*), intent(IN) :: path
   end subroutine RPN_COMM_chdir
+  function c_malloc(sz) result(p) BIND(C,name='malloc')
+    import :: C_PTR, C_SIZE_T
+    integer(C_SIZE_T), intent(IN), value :: sz
+    type(C_PTR) :: p
+  end function c_malloc
+  subroutine c_free(what) bind(C,name='free')
+    import :: C_PTR
+    type(C_PTR), intent(IN), value :: what
+  end subroutine c_free
   !==================================  local C functions ==================================
   function cpu_real_time_ticks() result(ticks) bind(C,name='cpu_real_time_ticks')
     import :: C_LONG_LONG

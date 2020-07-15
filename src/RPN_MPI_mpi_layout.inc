@@ -258,16 +258,30 @@
 ! PE topologies within a grid/subgrid
 
   type, BIND(C) :: RPN_MPI_Ftopo   ! 2D grid topology with RPNMPI (wrapped) communicators
-    integer :: version = mpi_symbols_version
+    integer(C_INT)     :: version = mpi_symbols_version
     type(RPN_MPI_Fcom) :: grd      ! the 2D grid
     type(RPN_MPI_Fcom) :: row      ! the grid row
     type(RPN_MPI_Fcom) :: col      ! the grid column
+    integer(C_INT)     :: li      ! local length along i
+    integer(C_INT)     :: lj        ! local length along j
+    integer(C_INT)     :: gi       ! global length along i
+    integer(C_INT)     :: gj       ! global length along j
+    ! watch 64 bit alignment here (14 integers above, should be OK for now)
+    type(C_PTR)        :: lis = C_NULL_PTR       ! local lengths along i
+    type(C_PTR)        :: ljs = C_NULL_PTR       ! local lengths along j
   end type RPN_MPI_Ftopo
 
   type, BIND(C) :: RPN_MPI_topo    ! 2D grid topology with integer MPI communicators
-    integer :: version = mpi_symbols_version
+    integer(C_INT)    :: version = mpi_symbols_version
     type(RPN_MPI_csr) :: grd       ! the 2D grid
     type(RPN_MPI_csr) :: row       ! the grid row
     type(RPN_MPI_csr) :: col       ! the grid column
+    integer(C_INT)    :: li        ! local length along i
+    integer(C_INT)    :: lj        ! local length along j
+    integer(C_INT)    :: gi        ! global length along i
+    integer(C_INT)    :: gj        ! global length along j
+    ! watch 64 bit alignment here (14 integers above, should be OK for now)
+    type(C_PTR)       :: lis = C_NULL_PTR       ! local lengths along i
+    type(C_PTR)       :: ljs = C_NULL_PTR       ! local lengths along j
   end type RPN_MPI_topo
 
