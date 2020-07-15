@@ -1,0 +1,8 @@
+! gives rpn_mpi_loc type to an address obtained with loc
+#if ! defined(LoC)
+#define LoC(what) rpn_mpi_loc(loc(what))
+#endif
+! gets wrapped value from a user defined type
+#if ! defined(VaL)
+#define VaL(a) (a%wrapped_value)
+#endif
