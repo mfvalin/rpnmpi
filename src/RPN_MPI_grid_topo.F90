@@ -299,3 +299,53 @@ end module RPN_MPI_mod_grid_topo
   ierr = MPI_ERROR
   call RPN_MPI_grid_topo(topo, pex, pey, bkx, bky, along_x, ierr)
  end subroutine RPN_MPI_ez_grid_topo                   !InTf!
+
+! add global and local tile dimensions to topology (ignore communicators)
+! normally called after RPN_MPI_grid_topo
+! for mode, see RPN_data_distribute
+ subroutine RPN_MPI_local_topo(topo, gni, gnj, mode, ierr)           !InTf!
+  use ISO_C_BINDING
+  use rpn_mpi_mpif
+  implicit none
+#define IN_RPN_MPI_grid_topo
+#include <RPN_MPI.hf>
+  include 'RPN_MPI_system_interfaces.inc'
+!! import :: RPN_MPI_Ftopo                            !InTf!
+  type(RPN_MPI_Ftopo), intent(INOUT) :: topo          !InTf!
+  integer, intent(IN)  :: gni, gnj, mode              !InTf!
+  integer, intent(OUT) :: ierr                        !InTf!
+
+  integer(C_SIZE_T) :: sz
+  integer, dimension(:), pointer :: fli, flj
+  integer, dimension(:), allocatable :: offset
+  integer :: lmin, lmax
+
+  ierr = MPI_ERROR
+
+  allocate(offset(topo%row%size  + topo%col%size ))  ! will be discarded, allocate big enough
+
+  topo%gi = gni                 ! global dimension along i
+  sz = 4 * topo%row%size + 8
+  topo%lis = c_malloc(sz)       ! local dimensions along i
+  call C_F_POINTER(topo%lis, fli, [topo%row%size])
+  call RPN_data_distribute(topo%row%rank, topo%row%size, 1, gni, lmin, lmax, fli, offset, mode)
+  if(lmax < lmin - 10) goto 2   ! something went wrong in distribute
+  topo%li = fli(topo%row%rank)  ! local dimension along j
+
+  topo%gj = gnj                 ! global dimension along j
+  sz = 4 * topo%col%size + 8
+  topo%ljs = c_malloc(sz)       ! local dimensions along j
+  call C_F_POINTER(topo%ljs, flj, [topo%col%size])
+  call RPN_data_distribute(topo%col%rank, topo%col%size, 1, gnj, lmin, lmax, flj, offset, mode)
+  if(lmax < lmin - 10) goto 2   ! something went wrong in distribute
+  topo%lj = flj(topo%col%rank)  ! local dimension along j
+
+  ierr = MPI_SUCCESS
+1 deallocate(offset)
+  return
+
+2 continue   ! error, deallocate length arrays
+  if(C_ASSOCIATED(topo%lis)) call c_free(topo%lis)
+  if(C_ASSOCIATED(topo%ljs)) call c_free(topo%ljs)
+  goto 1
+ end subroutine RPN_MPI_local_topo                    !InTf!
