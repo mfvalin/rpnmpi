@@ -80,8 +80,6 @@
 ! example of usage
 !
 ! #include 'RPN_MPI.hf'
-! ! macro names are CASE SENSITIVE
-! #define LoC(what) rpn_mpi_loc(loc(what))
 !
 !   integer(kind=8), dimension(:,:,:), allocatable   :: z, z2
 !   integer(kind=8), dimension(:,:,:,:), allocatable :: zt, zy, zty

@@ -12,8 +12,6 @@ subroutine rpn_mpi_test_105
   use ISO_C_BINDING
   implicit none
 #include <RPN_MPI.hf>
-#define LoC(what) rpn_mpi_loc(loc(what))
-
   integer :: ier, npe, rank, larg
   type(RPN_MPI_mpi_definitions_raw) :: dr
   integer :: i, j, npex, npey, blkx, blky, stat, x_first, ez

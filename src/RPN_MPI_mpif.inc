@@ -21,7 +21,7 @@ interface
     type(RPN_MPI_Comm), intent(IN) :: COMM
     integer, intent(OUT) :: IERROR
   end subroutine MPI_Recv
-  subroutine MPI_Sendecv(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, COMM, STATUS, IERROR)
+  subroutine MPI_Sendrecv(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, COMM, STATUS, IERROR)
     import :: RPN_MPI_Comm, RPN_MPI_Datatype, RPN_MPI_Loc
     implicit none
     type(RPN_MPI_Loc), intent(IN), value :: SENDBUF, RECVBUF
@@ -30,7 +30,7 @@ interface
     integer, intent(OUT), dimension(*) :: STATUS
     type(RPN_MPI_Comm), intent(IN) :: COMM
     integer, intent(OUT) :: IERROR
-  end subroutine MPI_Sendecv
+  end subroutine MPI_Sendrecv
   subroutine MPI_Comm_size(COMM, SIZE, IERROR)
     import :: RPN_MPI_Comm
     implicit none

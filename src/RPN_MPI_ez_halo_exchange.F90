@@ -99,8 +99,7 @@
 ! example of usage
 !
 ! #include 'RPN_MPI.hf'
-! ! macro names are CASE SENSITIVE
-! #define LoC(what) rpn_mpi_loc(loc(what))
+! ! macro names are CASE SENSITIVE (LoC)
 ! real, dimension(:,:,:), allocatable :: z
 ! type(RPN_MPI_Comm) :: col_comm, row_comm
 ! integer :: halox, haloy, NI,NJ,NK

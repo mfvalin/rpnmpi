@@ -5,9 +5,8 @@ subroutine rpn_mpi_test_103
 !
   use ISO_C_BINDING
   implicit none
-#define LoC(what) rpn_mpi_loc(loc(what))
 #include <RPN_MPI.hf>
-  include 'RPN_MPI_mpif.inc'
+  include 'RPN_MPI_mpif.inc'     ! interface prototypes for MPI routines
 
   type(RPN_MPI_mpi_definitions)     :: d
   type(RPN_MPI_mpi_definitions_raw) :: dr
