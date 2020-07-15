@@ -25,6 +25,7 @@ subroutine rpn_mpi_test_105
   call MPI_Init(ier)
 
   call RPN_MPI_get_mpi_definitions_raw(dr, ier)       ! get "raw" definitions
+
   call MPI_Comm_size(dr%MPI_COMM_WORLD, npe, ier)     ! get world size
   call MPI_Comm_rank(dr%MPI_COMM_WORLD, rank, ier)    ! get world rank
 
@@ -41,13 +42,30 @@ subroutine rpn_mpi_test_105
   allocate( pe_matrix(0:npex-1,0:npey-1), pe_x(0:npe-1), pe_y(0:npe-1) )
   allocate( pe_matrix_ref(0:npex-1,0:npey-1))
   pe_matrix = -1
+  pe_x      = -1
+  pe_y      = -1
 
   if(rank == 0) then                                   ! RPN_MPI_grid_topo test using MPI_COMM_NULL
+    if(x_first .eq. 1)then
+      write(0,*) 'INFO: distributing PEs along X axis first'
+    else
+      write(0,*) 'INFO: distributing PEs along Y axis first'
+    endif
+    if(ez .ne. 0) then
+        write(0,*) 'INFO: testing EZ_grid_topo with prior setup'
+    else
+        write(0,*) 'INFO: testing grid_topo without prior setup'
+    endif
     topo%grd%comm = RPN_MPI_Comm(dr%MPI_COMM_NULL)
     topo%grd%size = npex * npey
     do i = 0, topo%grd%size - 1                       ! loop over simulated ranks
       topo%grd%rank = i
-      call RPN_MPI_grid_topo(topo, npex, npey, blkx, blky, x_first == 1, ier)
+      if(ez .ne. 0) then
+        call RPN_MPI_set_grid_topo(npex, npey, blkx, blky, x_first == 1)
+        call RPN_MPI_ez_grid_topo(topo, ier)
+      else
+        call RPN_MPI_grid_topo(topo, npex, npey, blkx, blky, x_first == 1, ier)
+      endif
       if(topo%row%rank > npex - 1) goto 777
       if(topo%row%rank < 0       ) goto 777
       if(topo%col%rank > npey - 1) goto 777
@@ -75,10 +93,13 @@ subroutine rpn_mpi_test_105
     write(0,*) 'got',npe,' PEs, expected',npex*npey
     goto 777
   endif
-  pe_x      = -1
-  pe_y      = -1
-  call RPN_MPI_set_grid_topo(npex, npey, blkx, blky, x_first == 1)
-  call RPN_MPI_grid_topo(topo, npex, npey, blkx, blky, x_first == 1, ier)
+
+  if(ez .ne. 0) then
+    call RPN_MPI_set_grid_topo(npex, npey, blkx, blky, x_first == 1)
+    call RPN_MPI_ez_grid_topo(topo, ier)
+  else
+    call RPN_MPI_grid_topo(topo, npex, npey, blkx, blky, x_first == 1, ier)
+  endif
 
   call MPI_Gather(topo%row%rank, 1, dr%MPI_INTEGER, pe_x, 1, dr%MPI_INTEGER, 0, topo%grd%comm, ier)  ! gather x positions on Pe 0
   call MPI_Gather(topo%col%rank, 1, dr%MPI_INTEGER, pe_y, 1, dr%MPI_INTEGER, 0, topo%grd%comm, ier)  ! gather y positions on Pe 0

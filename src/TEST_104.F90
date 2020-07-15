@@ -32,6 +32,7 @@ subroutine rpn_mpi_test_104
   call MPI_Init(ier)
 
   call RPN_MPI_get_mpi_definitions_raw(dr, ier)       ! get "raw" definitions
+
   call MPI_Comm_size(dr%MPI_COMM_WORLD, npe, ier)     ! get world size
   call MPI_Comm_rank(dr%MPI_COMM_WORLD, rank, ier)    ! get world rank
 
