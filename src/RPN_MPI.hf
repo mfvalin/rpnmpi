@@ -1,3 +1,4 @@
+#include <RPN_MPI_macros.hf>
 #include <RPN_MPI_mpi_symbols.inc>
 #include <RPN_MPI_mpi_layout.inc>
 #if 0
