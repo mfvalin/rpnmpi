@@ -22,7 +22,7 @@
       implicit none
       integer, intent(IN) :: seconds  !InTf!
       integer :: seconds_since  !InTf!
-      include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
 
       seconds_since = c_alarm(seconds)
       return
@@ -33,7 +33,7 @@
       implicit none
       integer, intent(IN) :: seconds  !InTf!
       integer :: seconds_since  !InTf!
-      include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
 
       seconds_since = c_alarm(seconds)
       return

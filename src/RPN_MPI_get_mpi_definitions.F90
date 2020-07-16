@@ -80,7 +80,7 @@ module RPN_MPI_mpi_layout
 contains
   subroutine RPN_MPI_init_mpi_layout     ! MUST BE CALLED ASAP by RPN_MPI_init
     implicit none
-    include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
     integer :: cpu
     type(C_PTR) :: p
 
@@ -165,7 +165,7 @@ end module RPN_MPI_mpi_layout
  subroutine RPN_MPI_reset_mpi_layout()                       !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
-  include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
   integer :: cpu
   call RPN_MPI_init_mpi_layout
 

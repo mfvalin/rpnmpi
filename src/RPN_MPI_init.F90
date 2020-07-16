@@ -59,7 +59,7 @@
 !!
 !       this is also intended to be a cleanup/refactoring of RPN_MPI_init_multi_level
 !
-      include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
       integer ierr, i, j, count, npe, reste, nslots, key, status, core
       integer :: pe_type    ! 0 = compute, 1 = service
       integer :: service, compute

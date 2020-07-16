@@ -117,7 +117,7 @@ module RPN_MPI_halo_cache
   use ISO_C_BINDING
   use rpn_mpi_mpif
   implicit none
-  include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
   integer, parameter :: NTS = 9
   integer(kind=8), dimension(NTS) :: ts = [0,0,0,0,0,0,0,0,0]   ! timing points
 !   logical, save :: redblack = .false.  ! if true, use fully synchronous (send, recv, no sendrecv) method

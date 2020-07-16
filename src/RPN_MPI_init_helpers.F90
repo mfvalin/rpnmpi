@@ -102,7 +102,7 @@
       use ISO_C_BINDING
       implicit none
       integer, intent(OUT) ::  core, numa                          !InTf!
-      include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
 
       core = sched_get_my_cpu()
       numa = numa_node(core)

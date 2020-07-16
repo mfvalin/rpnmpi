@@ -309,7 +309,7 @@ end module RPN_MPI_mod_grid_topo
   implicit none
 #define IN_RPN_MPI_grid_topo
 #include <RPN_MPI.hf>
-  include 'RPN_MPI_system_interfaces.inc'
+#include <RPN_MPI_system_interfaces.hf>
 !! import :: RPN_MPI_Ftopo                            !InTf!
   type(RPN_MPI_Ftopo), intent(INOUT) :: topo          !InTf!
   integer, intent(IN)  :: gni, gnj, mode              !InTf!
