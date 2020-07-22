@@ -262,14 +262,50 @@
     type(RPN_MPI_Fcom) :: grd      ! the 2D grid
     type(RPN_MPI_Fcom) :: row      ! the grid row
     type(RPN_MPI_Fcom) :: col      ! the grid column
-    integer(C_INT)     :: li      ! local length along i
-    integer(C_INT)     :: lj        ! local length along j
+    integer(C_INT)     :: li       ! local length along i
+    integer(C_INT)     :: lj       ! local length along j
     integer(C_INT)     :: gi       ! global length along i
     integer(C_INT)     :: gj       ! global length along j
     ! watch 64 bit alignment here (14 integers above, should be OK for now)
     type(C_PTR)        :: lis = C_NULL_PTR       ! local lengths along i
     type(C_PTR)        :: ljs = C_NULL_PTR       ! local lengths along j
   end type RPN_MPI_Ftopo
+  type(RPN_MPI_Ftopo), parameter :: RPN_MPI_Ftopo_NULL = RPN_MPI_Ftopo(         &
+                       mpi_symbols_version,                                     &
+                       RPN_MPI_Fcom_NULL, RPN_MPI_Fcom_NULL, RPN_MPI_Fcom_NULL, &
+                       0, 0, 0, 0, C_NULL_PTR, C_NULL_PTR )
+
+  integer, parameter  :: EDGE_NONE = B'0000'   ! not a face edge
+  integer, parameter  :: EDGE_YY   = B'0111'   ! E or W edge, partnder is E or W edge
+  integer, parameter  :: EDGE_YX   = B'0110'   ! E or W edge, partnder is N or S edge
+  integer, parameter  :: EDGE_XY   = B'0101'   ! N or S edge, partnder is E or W edge
+  integer, parameter  :: EDGE_XX   = B'0100'   ! N or S edge, partnder is N or S edge
+  integer, parameter  :: EDGE_REV  = B'1000'   ! reverse edge exchange flag
+
+  type, BIND(C) :: RPN_MPI_Fedge   ! 3D cube edge with RPNMPI (wrapped) communicators
+    type(RPN_MPI_Fcom) :: comm     ! comm%size = len0 + len1  (or else !!)
+    integer(C_INT)     :: parm     ! edge flags : XX,YY,YX,XY, NONE, REVERSE
+    integer(C_INT)     :: edge     ! edge number (0->11) (-1 if not a face edge)
+    integer(C_INT)     :: len0     ! size of partner 0 row or column (lowest face number)
+    integer(C_INT)     :: len1     ! size of partner 1 row or column (highest face number)
+  end type RPN_MPI_Fedge
+  type(RPN_MPI_Fedge), parameter :: RPN_MPI_Fedge_NULL = RPN_MPI_Fedge(RPN_MPI_Fcom_NULL, 0, -1, 0, 0)
+
+  type, BIND(C) :: RPN_MPI_Fcube   ! 3D cube topology with RPNMPI (wrapped) communicators
+    integer(C_INT)     :: version = mpi_symbols_version
+    type(RPN_MPI_Fcom) :: cube
+    ! watch 64 bit alignment here (needed for RPN_MPI_Ftopo) (4 integers above, should be OK for now)
+    type(RPN_MPI_Ftopo):: face    ! my cube face (a normal grid, with gi==gj constraint)
+    integer(C_INT)     :: faceno  ! cube face number (0->5)
+    type(RPN_MPI_Fedge):: north   ! north edge description
+    type(RPN_MPI_Fedge):: south   ! south edge description
+    type(RPN_MPI_Fedge):: east    ! east edge description
+    type(RPN_MPI_Fedge):: west    ! west edge description
+  end type RPN_MPI_Fcube
+  type(RPN_MPI_Fcube), parameter :: RPN_MPI_Fcube_NULL = RPN_MPI_Fcube( &
+                       mpi_symbols_version,                             &
+                       RPN_MPI_Fcom_NULL, RPN_MPI_Ftopo_NULL, -1,       &
+                       RPN_MPI_Fedge_NULL, RPN_MPI_Fedge_NULL, RPN_MPI_Fedge_NULL, RPN_MPI_Fedge_NULL )
 
   type, BIND(C) :: RPN_MPI_topo    ! 2D grid topology with integer MPI communicators
     integer(C_INT)    :: version = mpi_symbols_version
@@ -284,4 +320,3 @@
     type(C_PTR)       :: lis = C_NULL_PTR       ! local lengths along i
     type(C_PTR)       :: ljs = C_NULL_PTR       ! local lengths along j
   end type RPN_MPI_topo
-

@@ -36,6 +36,7 @@
     integer(C_INT)     :: size
     integer(C_INT)     :: rank
   end type RPN_MPI_Fcom
+  type(RPN_MPI_Fcom), parameter :: RPN_MPI_Fcom_NULL = RPN_MPI_Fcom(RPN_MPI_Comm(MPI_COMM_NULL), 0, 0)
 
   type, BIND(C) :: RPN_MPI_csr     ! the Fortran trio, communicator, size, and rank
     integer(C_INT)     :: comm
