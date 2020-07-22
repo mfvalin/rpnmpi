@@ -31,11 +31,11 @@ STUB_LIBRARY = $(LIBDIR)/lib$(LIB)stubs_$(RPN_MPI_version)$(MPI_VERSION).a
 SOURCES  = $(INCDECKS) $(CDECKS) $(FDECKS) $(HDECKS) $(F90DECKS)
 
 DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.hf $(VPATH)/RPN_MPI.hf \
-               $(VPATH)/RPN_MPI_types.inc $(VPATH)/RPN_COMM_constants.inc \
-               $(VPATH)/RPN_MPI_ftoc.inc $(VPATH)/RPN_MPI_is_null.inc \
+               $(VPATH)/RPN_MPI_types.inc $(VPATH)/RPN_MPI_ftoc.inc \
                $(VPATH)/RPN_MPI_mpi_layout.hf $(VPATH)/RPN_MPI_mpi_symbols.hf \
                $(VPATH)/RPN_MPI_mpi_definitions.hf $(VPATH)/RPN_MPI_mpif.hf \
-               $(VPATH)/RPN_MPI_system_interfaces.hf
+               $(VPATH)/RPN_MPI_system_interfaces.hf \
+               $(VPATH)/RPN_COMM_is_null.inc  $(VPATH)/RPN_COMM_constants.inc
 
 ITF = $(VPATH)/RPN_MPI_interfaces.hf
 
