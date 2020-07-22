@@ -277,7 +277,7 @@
 
   integer, parameter  :: EDGE_NONE = B'0000'   ! not a face edge
   integer, parameter  :: EDGE_YY   = B'0111'   ! E or W edge, partnder is E or W edge
-  integer, parameter  :: EDGE_YX   = B'0110'   ! E or W edge, partnder is N or S edge
+!   integer, parameter  :: EDGE_YX   = B'0110'   ! E or W edge, partnder is N or S edge (EDGE_XY is used)
   integer, parameter  :: EDGE_XY   = B'0101'   ! N or S edge, partnder is E or W edge
   integer, parameter  :: EDGE_XX   = B'0100'   ! N or S edge, partnder is N or S edge
   integer, parameter  :: EDGE_REV  = B'1000'   ! reverse edge exchange flag

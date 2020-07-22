@@ -1,22 +1,17 @@
-!/! RPN_MPI - Library of useful routines for C and FORTRAN programming
-! ! Copyright (C) 1975-2020  Division de Recherche en Prevision Numerique
-! !                          Environnement Canada
-! !
-! ! This library is free software; you can redistribute it and/or
-! ! modify it under the terms of the GNU Lesser General Public
-! ! License as published by the Free Software Foundation,
-! ! version 2.1 of the License.
-! !
-! ! This library is distributed in the hope that it will be useful,
-! ! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-! ! Lesser General Public License for more details.
-! !
-! ! You should have received a copy of the GNU Lesser General Public
-! ! License along with this library; if not, write to the
-! ! Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-! ! Boston, MA 02111-1307, USA.
-! !/
+! RPN_MPI - Library of useful routines for C and FORTRAN programming
+! Copyright (C) 1975-2020  Division de Recherche en Prevision Numerique
+!                          Environnement Canada
+!
+! This library is free software; you can redistribute it and/or
+! modify it under the terms of the GNU Lesser General Public
+! License as published by the Free Software Foundation,
+! version 2.1 of the License.
+!
+! This library is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+! Lesser General Public License for more details.
+!
 !     set PE block topology
 !     assemble PEs in blocks of blkx by blky tiles
 !
@@ -285,6 +280,7 @@ end module RPN_MPI_mod_grid_topo
   endif
 
  end subroutine RPN_MPI_grid_topo                      !InTf!
+
  subroutine RPN_MPI_ez_grid_topo(topo, ierr)           !InTf!
   use ISO_C_BINDING
   use rpn_mpi_mpif
@@ -349,3 +345,23 @@ end module RPN_MPI_mod_grid_topo
   if(C_ASSOCIATED(topo%ljs)) call c_free(topo%ljs)
   goto 1
  end subroutine RPN_MPI_local_topo                    !InTf!
+
+! initialize a 2D topology to null values
+ subroutine RPN_MPI_init_topo(topo, ierr)             !InTf!
+  use ISO_C_BINDING
+  use rpn_mpi_mpif
+  implicit none
+#define IN_RPN_MPI_grid_topo
+#include <RPN_MPI.hf>
+#include <RPN_MPI_system_interfaces.hf>
+!! import :: RPN_MPI_Ftopo                            !InTf!
+  type(RPN_MPI_Ftopo), intent(INOUT) :: topo          !InTf!
+  integer, intent(OUT) :: ierr                        !InTf!
+
+  ierr = MPI_ERROR
+  if(topo%version .ne. mpi_symbols_version) return ! RPN_MPI version mismatch
+
+  topo  = RPN_MPI_Ftopo_NULL
+
+  ierr = MPI_SUCCESS
+ end subroutine RPN_MPI_init_topo                     !InTf!
