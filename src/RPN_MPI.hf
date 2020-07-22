@@ -1,7 +1,10 @@
 #include <RPN_MPI_macros.hf>
-#include <RPN_MPI_mpi_symbols.inc>
-#include <RPN_MPI_mpi_layout.inc>
+#include <RPN_MPI_mpi_symbols.hf>
+#include <RPN_MPI_mpi_layout.hf>
+#if defined(IN_RPN_MPI_LIBRARY)
+#include <RPN_MPI_nulls.hf>
+#endif
 #if 0
-#include <RPN_MPI_types_int.inc>
+#include <RPN_MPI_types_int.hf>
 #endif
 #include <RPN_MPI_interfaces.hf>

@@ -6,7 +6,7 @@ subroutine rpn_mpi_test_103
   use ISO_C_BINDING
   implicit none
 #include <RPN_MPI.hf>
-  include 'RPN_MPI_mpif.inc'     ! interface prototypes for MPI routines
+#include <RPN_MPI_mpif.hf>     ! interface prototypes for MPI routines
 
   type(RPN_MPI_mpi_definitions)     :: d
   type(RPN_MPI_mpi_definitions_raw) :: dr

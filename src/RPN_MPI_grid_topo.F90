@@ -172,6 +172,8 @@
 !         +----+  +----+  +----+  +----+ 
 !            0       1       2       3    topo%row%rank
 !
+#define IN_RPN_MPI_grid_topo
+#define IN_RPN_MPI_LIBRARY
 ! internal data for RPN_MPI_ez_grid_topo
 module RPN_MPI_mod_grid_topo
   integer, save :: pex = 0
@@ -215,8 +217,7 @@ end module RPN_MPI_mod_grid_topo
   use ISO_C_BINDING
   use rpn_mpi_mpif
   implicit none
-  include 'RPN_MPI_mpi_symbols.inc'
-  include 'RPN_MPI_mpi_layout.inc'
+#include <RPN_MPI.hf>
 !! import :: RPN_MPI_Ftopo                             !InTf!
   type(RPN_MPI_Ftopo), intent(INOUT) :: topo           !InTf!
   integer, intent(IN) :: npex, npey                    !InTf!
@@ -286,7 +287,6 @@ end module RPN_MPI_mod_grid_topo
   use rpn_mpi_mpif
   use RPN_MPI_mod_grid_topo
   implicit none
-#define IN_RPN_MPI_grid_topo
 #include <RPN_MPI.hf>
 !! import :: RPN_MPI_Ftopo                            !InTf!
   type(RPN_MPI_Ftopo), intent(INOUT) :: topo          !InTf!
@@ -303,7 +303,6 @@ end module RPN_MPI_mod_grid_topo
   use ISO_C_BINDING
   use rpn_mpi_mpif
   implicit none
-#define IN_RPN_MPI_grid_topo
 #include <RPN_MPI.hf>
 #include <RPN_MPI_system_interfaces.hf>
 !! import :: RPN_MPI_Ftopo                            !InTf!
@@ -351,7 +350,6 @@ end module RPN_MPI_mod_grid_topo
   use ISO_C_BINDING
   use rpn_mpi_mpif
   implicit none
-#define IN_RPN_MPI_grid_topo
 #include <RPN_MPI.hf>
 #include <RPN_MPI_system_interfaces.hf>
 !! import :: RPN_MPI_Ftopo                            !InTf!

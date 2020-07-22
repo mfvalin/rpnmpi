@@ -33,9 +33,9 @@ SOURCES  = $(INCDECKS) $(CDECKS) $(FDECKS) $(HDECKS) $(F90DECKS)
 DISTINCLUDES = $(VPATH)/RPN_MPI_interfaces.hf $(VPATH)/RPN_MPI.hf \
                $(VPATH)/RPN_MPI_types.inc $(VPATH)/RPN_COMM_constants.inc \
                $(VPATH)/RPN_MPI_ftoc.inc $(VPATH)/RPN_MPI_is_null.inc \
-               $(VPATH)/RPN_MPI_mpi_layout.inc $(VPATH)/RPN_MPI_mpi_symbols.inc \
-               $(VPATH)/RPN_MPI_mpi_definitions.inc $(VPATH)/RPN_MPI_mpif.inc \
-               $(VPATH)/RPN_MPI_system_interfaces.inc
+               $(VPATH)/RPN_MPI_mpi_layout.hf $(VPATH)/RPN_MPI_mpi_symbols.hf \
+               $(VPATH)/RPN_MPI_mpi_definitions.hf $(VPATH)/RPN_MPI_mpif.hf \
+               $(VPATH)/RPN_MPI_system_interfaces.hf
 
 ITF = $(VPATH)/RPN_MPI_interfaces.hf
 

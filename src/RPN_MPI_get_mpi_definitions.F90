@@ -21,8 +21,8 @@ module RPN_MPI_mpi_layout
   use ISO_C_BINDING
   use rpn_mpi_mpif
   implicit none
-  include 'RPN_MPI_mpi_symbols.inc'
-  include 'RPN_MPI_mpi_layout.inc'
+#include <RPN_MPI_mpi_symbols.hf>
+#include <RPN_MPI_mpi_layout.hf>
 
   ! ml is statically initialized, mw will be initialized by RPN_MPI_init_mpi_layout
   type(mpi_layout_internal), save, target :: ml = &    ! RPN_MPI communicators, ranks, sizes

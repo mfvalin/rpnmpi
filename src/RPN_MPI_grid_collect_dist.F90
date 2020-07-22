@@ -13,14 +13,13 @@
 ! ! Lesser General Public License for more details.
 ! !
 ! !/
-#include <RPN_MPI_macros.hf>
+#define IN_RPN_MPI_grid_collect_dist
  subroutine RPN_MPI_grid_collect(topo, &                                               !InTf!
                             zloc, mini, maxi, minj, maxj, &                            !InTf!
                             zglb, gni, gnj, ierr) bind(C,name='RPN_MPI_grid_collect')  !InTf!
   use rpn_mpi_mpif
   implicit none
-  include 'RPN_MPI_mpi_symbols.inc'
-  include 'RPN_MPI_mpi_layout.inc'
+#include <RPN_MPI.hf>
 !! import :: RPN_MPI_Loc, RPN_MPI_Ftopo, C_INT                   !InTf!
   type(RPN_MPI_Ftopo), intent(IN) :: topo                        !InTf!
   integer(C_INT), intent(IN) :: mini,maxi,minj,maxj,gni,gnj      !InTf!
@@ -89,8 +88,7 @@
                             zglb, gni, gnj, ierr) bind(C,name='RPN_MPI_grid_dist')  !InTf!
   use rpn_mpi_mpif
   implicit none
-  include 'RPN_MPI_mpi_symbols.inc'
-  include 'RPN_MPI_mpi_layout.inc'
+#include <RPN_MPI.hf>
 !! import :: RPN_MPI_Loc, RPN_MPI_Ftopo, C_INT                   !InTf!
   type(RPN_MPI_Ftopo), intent(IN) :: topo                        !InTf!
   integer(C_INT), intent(IN) :: mini,maxi,minj,maxj,gni,gnj      !InTf!

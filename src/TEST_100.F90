@@ -4,7 +4,7 @@ subroutine rpn_mpi_test_100
   use ISO_C_BINDING
   implicit none
 #include <RPN_MPI.hf>
-  include 'RPN_MPI_mpif.inc'
+#include <RPN_MPI_mpif.hf>
   print *,'INFO: compilation/load is O.K.'
   print *,'INFO: this is a non MPI test'
   call sub1          ! set values
@@ -81,7 +81,7 @@ end subroutine sub2
 !  uses the access functions,
 !  the prototypes of which are obtained from include files
 !  RPN_MPI.hf        for the RPN_MPI library prototypes
-!  RPN_MPI_mpif.inc  for the MPI function prototypes using RPN_MPI wrappers
+!  RPN_MPI_mpif.hf  for the MPI function prototypes using RPN_MPI wrappers
 !============================================================================
 subroutine sub3
 ! perform the same check as sub2 but with copies of structures
@@ -89,7 +89,7 @@ subroutine sub3
   use ISO_C_BINDING
   implicit none
 #include <RPN_MPI.hf>
-  include 'RPN_MPI_mpif.inc'
+#include <RPN_MPI_mpif.hf>
   type(RPN_MPI_mpi_definitions_raw) :: dr  ! "raw" MPI symbols
   type(RPN_MPI_mpi_definitions)     :: dw  ! "wrapped" MPI symbols
   type(mpi_layout_internal)         :: ml  ! "raw" RPN_MPI layout information
