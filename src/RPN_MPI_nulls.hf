@@ -1,0 +1,11 @@
+  type(RPN_MPI_Comm), parameter :: RPN_MPI_Comm_NULL = RPN_MPI_Comm(MPI_COMM_NULL)
+  type(RPN_MPI_Fcom), parameter :: RPN_MPI_Fcom_NULL = RPN_MPI_Fcom(RPN_MPI_Comm(MPI_COMM_NULL), 0, 0)
+  type(RPN_MPI_Ftopo), parameter :: RPN_MPI_Ftopo_NULL = RPN_MPI_Ftopo(         &
+                       mpi_symbols_version,                                     &
+                       RPN_MPI_Fcom_NULL, RPN_MPI_Fcom_NULL, RPN_MPI_Fcom_NULL, &
+                       0, 0, 0, 0, C_NULL_PTR, C_NULL_PTR )
+  type(RPN_MPI_Fedge), parameter :: RPN_MPI_Fedge_NULL = RPN_MPI_Fedge(RPN_MPI_Fcom_NULL, EDGE_NONE, -1, 0, 0)
+  type(RPN_MPI_Fcube), parameter :: RPN_MPI_Fcube_NULL = RPN_MPI_Fcube( &
+                       mpi_symbols_version,                             &
+                       RPN_MPI_Fcom_NULL, RPN_MPI_Ftopo_NULL, -1,       &
+                       RPN_MPI_Fedge_NULL, RPN_MPI_Fedge_NULL, RPN_MPI_Fedge_NULL, RPN_MPI_Fedge_NULL )
