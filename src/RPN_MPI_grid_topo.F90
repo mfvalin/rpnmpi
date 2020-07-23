@@ -363,3 +363,17 @@ end module RPN_MPI_mod_grid_topo
 
   ierr = MPI_SUCCESS
  end subroutine RPN_MPI_init_topo                     !InTf!
+
+! fill rank and size from fcom%comm
+ subroutine RPN_MPI_set_fcom(fcom, ierr)            !InTf!
+  use ISO_C_BINDING
+  use rpn_mpi_mpif
+  implicit none
+#include <RPN_MPI.hf>
+!! import :: RPN_MPI_Fcom                           !InTf!
+  type(RPN_MPI_Fcom), intent(INOUT) :: fcom         !InTf!
+  integer, intent(OUT) :: ierr                      !InTf!
+
+  call MPI_Comm_rank(fcom%comm, fcom%rank, ierr)
+  call MPI_Comm_size(fcom%comm, fcom%size, ierr)
+ end subroutine RPN_MPI_set_fcom                    !InTf!

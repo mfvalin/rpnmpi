@@ -78,49 +78,40 @@ module RPN_MPI_mpi_layout
     )
   type(RPN_MPI_mpi_definitions), save, pointer :: dw => NULL()   ! MPI constants, "wrapped"
 contains
-  subroutine RPN_MPI_init_mpi_layout     ! MUST BE CALLED ASAP by RPN_MPI_init
+!
+! make "wrapped" definitions available by pointing them to the "raw" definitions
+!
+! - MUST BE CALLED ASAP by RPN_MPI_init
+! - will get called by RPN_MPI_get_mpi_definitions.../RPN_MPI_get_mpi_layout...
+!   if dw or mw is not "associated" at time of call
+!
+  subroutine RPN_MPI_init_mpi_layout
     implicit none
 #include <RPN_MPI_system_interfaces.hf>
     integer :: cpu
     type(C_PTR) :: p
 
-    p = C_LOC(dr)
-    call C_F_POINTER(p, dw)
+    p = C_LOC(dr)                                     ! definitions
+    if(.not. associated(dw)) call C_F_POINTER(p, dw)  ! point to "raw" version
 
 !     ml%version = layout_version
     ml%host = get_host_id()              ! get linux host id
-    cpu = sched_get_my_cpu()             ! get logical cpu number
-    ml%numa = numa_node(cpu)             ! get numa space number for this cpu
-!     ml%colors = [-1, -1, -1]
-! 
-!     ml%comm%wrld = application(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL)
-!     ml%rank%wrld = application(-1, -1, -1)
-!     ml%size%wrld = application(-1, -1, -1)
-! 
-!     ml%comm%appl = ml%comm%wrld
-!     ml%rank%appl = ml%rank%wrld
-!     ml%size%appl = ml%size%wrld
-! 
-!     ml%comm%sgrd = mpigrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-! 			   MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-! 			   MPI_COMM_NULL, MPI_COMM_NULL)
-!     ml%rank%sgrd = mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
-!     ml%size%sgrd = mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
-! 
-!     ml%comm%grid = ml%comm%sgrd
-!     ml%rank%grid = ml%rank%sgrd
-!     ml%size%grid = ml%size%sgrd
-! 
-!     ml%comm%blck = subgrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL)
-!     ml%rank%blck = subgrid(-1, -1, -1)
-!     ml%size%blck = subgrid(-1, -1, -1)
+    cpu = sched_get_my_cpu()             ! get logical core number
+    ml%numa = numa_node(cpu)             ! get numa space number for this core
 
-    p = C_LOC(ml)
-    call C_F_POINTER(p, mw)
+    p = C_LOC(ml)                                     ! layout
+    if(.not. associated(mw)) call C_F_POINTER(p, mw)  ! point to "raw" version
     return
   end subroutine RPN_MPI_init_mpi_layout
 end module RPN_MPI_mpi_layout
 
+! get access to the most common MPI parameters, like MPI_COMM_WORLD, MPI_COMM_NULL, etc...
+! useful to make calls to MPI library routines directly without having to include mpif.f or equivalent
+! thereby creating a dependency for the code upon the MPI implementation (insulation layer)
+!
+! RPN_MPI_get_mpi_definitions_raw gets a copy of the "not wrapped, raw" parameters
+! RPN_MPI_get_mpi_definitions     gets a copy of the "wrapped" parameters, useful for interface enforcement
+!
  subroutine RPN_MPI_get_mpi_definitions_raw(what, ierr)          !InTf! ! get a copy of raw MPI definitions
   use ISO_C_BINDING
   use RPN_MPI_mpi_layout
@@ -128,6 +119,8 @@ end module RPN_MPI_mpi_layout
 !!  import :: RPN_MPI_mpi_definitions_raw                        !InTf! 
   type(RPN_MPI_mpi_definitions_raw), intent(INOUT) :: what      !InTf! 
   integer, intent(OUT) :: ierr                                  !InTf! 
+
+  if(.not. associated(dw)) call RPN_MPI_init_mpi_layout
 
   ierr = MPI_ERROR
   if(what%version .ne. mpi_symbols_version) then
@@ -160,47 +153,11 @@ end module RPN_MPI_mpi_layout
   return
  end subroutine RPN_MPI_get_mpi_definitions                  !InTf! 
 
-! initialize RPN_MPI internal mpi layout (communicators, ranks, sizes)
-! OBSOLETE NOW, replaced by RPN_MPI_init_mpi_layout
- subroutine RPN_MPI_reset_mpi_layout()                       !InTf! 
-  use RPN_MPI_mpi_layout
-  implicit none
-#include <RPN_MPI_system_interfaces.hf>
-  integer :: cpu
-  call RPN_MPI_init_mpi_layout
-
-!   ml%host = get_host_id()              ! get linux host id
-!   cpu = sched_get_my_cpu()             ! get logical cpu number
-!   ml%numa = numa_node(cpu)             ! get numa space number for this cpu
-!   ml%colors = [-1, -1, -1]
-! 
-!   ml%comm%wrld = application(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL)
-!   ml%rank%wrld = application(-1, -1, -1)
-!   ml%size%wrld = application(-1, -1, -1)
-! 
-!   ml%comm%appl = ml%comm%wrld
-!   ml%rank%appl = ml%rank%wrld
-!   ml%size%appl = ml%size%wrld
-! 
-!   ml%comm%sgrd = mpigrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-! 			 MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-! 			 MPI_COMM_NULL, MPI_COMM_NULL)
-!   ml%rank%sgrd = mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
-!   ml%size%sgrd = mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)
-! 
-!   ml%comm%grid = ml%comm%sgrd
-!   ml%rank%grid = ml%rank%sgrd
-!   ml%size%grid = ml%size%sgrd
-! 
-!   ml%comm%blck = subgrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL)
-!   ml%rank%blck = subgrid(-1, -1, -1)
-!   ml%size%blck = subgrid(-1, -1, -1)
-
-  return
- end subroutine RPN_MPI_reset_mpi_layout                     !InTf! 
-
 ! same as RPN_MPI_get_mpi_layout but advertized with type mpi_layout_internal rather than mpi_layout
-! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
+! get a copy of RPN_MPI internal mpi layout (communicators, ranks, sizes)
+!
+! RPN_MPI_get_mpi_layout_raw gets a copy of the "not wrapped, raw" information (communicators)
+! RPN_MPI_get_mpi_layout     gets a copy of the "wrapped" information, useful for interface enforcement
  subroutine RPN_MPI_get_mpi_layout_raw(what, ierr)            !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
@@ -211,18 +168,22 @@ end module RPN_MPI_mpi_layout
   return
  end subroutine RPN_MPI_get_mpi_layout_raw                    !InTf! 
 
-! get a copy on RPN_MPI internal mpi layout (communicators, ranks, sizes)
+! get a copy of RPN_MPI internal mpi layout (communicators, ranks, sizes)
  subroutine RPN_MPI_get_mpi_layout(what, ierr)               !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
-! white lie in published interface, "what" is treated as the "internal" type rather than the "wrapped" type
 !!  import :: mpi_layout, C_INT                              !InTf! 
+! white lie in published interface, 
+! "what" is treated as the "internal" type rather than the "wrapped" type
+! but it is advertized to the user as "wrapped"
 !!  type(mpi_layout), intent(INOUT) :: what                  !InTf! 
   type(mpi_layout_internal), intent(INOUT) :: what
   integer(C_INT), intent(OUT) :: ierr                       !InTf! 
   integer :: i
 
   ierr = MPI_ERROR
+  if(.not. associated(mw)) call RPN_MPI_init_mpi_layout
+
   if(what%version .ne. layout_version) then
     write(0,*)'ERROR: (RPN_MPI_get_mpi_layout) version mismatch, expected :',layout_version,' got :',what%version
     what%version = -1

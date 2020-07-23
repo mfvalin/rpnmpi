@@ -89,7 +89,7 @@
       do i = 1, min(5 , len(AppID))    ! 6 bits per character ASCII 32-96, case insensitive
         ApplID = ApplID * 64 + and(63, 32 + ichar(AppID(i:i)))  ! i th character
       enddo
-      call RPN_MPI_reset_mpi_layout   ! initialize NEW style layout structure
+      call RPN_MPI_init_mpi_layout   ! initialize NEW style layout structure
       call RPN_MPI_get_core_and_numa(core, ml%numa)  ! get numa space for this PE
       ml%host = get_host_id()   ! get host id for this PE
       compute = Io / 10         ! number of compute PEs in a PE block (compute + service PEs)

@@ -33,8 +33,10 @@
 !     ODD PEs
 !                      send to even PE at West
 !       if not East PE recv from even PE at East
-!****P* rpn_mpi/halo  halo exchange routines
+!****P* rpn_mpi/Halo
 ! DESCRIPTION
+! halo exchange package
+!
 ! these routines are used to perform a halo exchange between members of a "grid"
 ! an internal timing package keeps timing statistics about the various phases of the exchnage
 !
@@ -112,6 +114,11 @@
 !
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
+! SEE ALSO
+!   RPN_MPI_ez_halo RPN_MPI_ez_halo_8 RPN_MPI_halo RPN_MPI_halo_8
+!   RPN_MPI_ez_halo_parms 
+!   RPN_MPI_print_halo_timings RPN_MPI_reset_halo_timings
+!
 !******
 module RPN_MPI_halo_cache
   use ISO_C_BINDING
@@ -131,8 +138,10 @@ contains
 ! an interface will be needed to use RPN_MPI_halo
 ! the published interface will use the "void *" approach
 !
-!****f* rpn_mpi/RPN_MPI_halo halo exchange for 4 byte items
+!****f* rpn_mpi/RPN_MPI_halo
 ! DESCRIPTION
+! halo exchange for 4 byte items
+!
 ! this routine will perform a horizontal halo exchange with NO PERIODIC BOUNDARY conditions 
 ! for all "planes" of a "grid"
 !
@@ -144,6 +153,9 @@ contains
 ! halox       : number of "halo" points along x
 ! haloy       : number of "halo" points along y
 ! g           : address (wrapped) of array
+!
+! SEE ALSO
+!   RPN_MPI_ez_halo Halo
 !
 ! SYNOPSIS
  subroutine RPN_MPI_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo') !InTf!
@@ -265,12 +277,17 @@ contains
   return
  end subroutine RPN_MPI_halo                                               !InTf!
 
-!****f* rpn_mpi/RPN_MPI_halo8 8 byte version of RPN_MPI_halo
+!****f* rpn_mpi/RPN_MPI_halo_8
 ! DESCRIPTION
+! 8 byte version of RPN_MPI_halo
+!
 ! see RPN_MPI_halo. (array subject to halo exchange is made of 8 byte items)
 !
+! SEE ALSO
+!   RPN_MPI_halo Halo
+!
 ! SYNOPSIS
- subroutine RPN_MPI_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo8')  !InTf!
+ subroutine RPN_MPI_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo_8')  !InTf!
 ! IGNORE
   use ISO_C_BINDING
   implicit none
@@ -288,12 +305,17 @@ contains
 
   call RPN_MPI_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,row,col)
   return
- end subroutine RPN_MPI_halo8                                                           !InTf!
+ end subroutine RPN_MPI_halo_8                                                           !InTf!
 
-!****f* rpn_mpi/RPN_MPI_ez_halo grid halo exchange for 4 byte items
+!****f* rpn_mpi/RPN_MPI_ez_halo
 ! DESCRIPTION
+! grid halo "easy" exchange for 4 byte items
+!
 ! same functionality as RPN_MPI_halo, communicators are implicit
 ! (a previous call to RPN_MPI_ez_halo_parms may be needed)
+!
+! SEE ALSO
+!   RPN_MPI_halo Halo
 !
 ! SYNOPSIS
  subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo')       !InTf!
@@ -318,13 +340,18 @@ contains
   return
  end subroutine RPN_MPI_ez_halo                                                  !InTf!
 
-!****f* rpn_mpi/RPN_MPI_ez_halo_8 8 byte version of RPN_MPI_ez_halo
+!****f* rpn_mpi/RPN_MPI_ez_halo_8
 ! DESCRIPTION
-! same functionality as RPN_MPI_halo8, communicators are implicit
+! 8 byte version of RPN_MPI_ez_halo
+!
+! same functionality as RPN_MPI_halo_8, communicators are implicit
 ! (a previous call to RPN_MPI_ez_halo_parms may be needed)
 !
+! SEE ALSO
+!   RPN_MPI_ez_halo RPN_MPI_halo_8 Halo
+!
 ! SYNOPSIS
- subroutine RPN_MPI_ez_halo8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo8')     !InTf!
+ subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo_8')     !InTf!
 ! IGNORE
   use ISO_C_BINDING
   implicit none
@@ -338,15 +365,20 @@ contains
 ! white lie in published interface, g is published as an address passed by value
   integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
   call RPN_MPI_ez_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
- end subroutine RPN_MPI_ez_halo8                                                !InTf!
+ end subroutine RPN_MPI_ez_halo_8                                                !InTf!
 end module RPN_MPI_halo_cache
 !====================================================================================================
 
-!****f* rpn_mpi/RPN_MPI_get_halo_timings get a copy of the current timing stats
+!****f* rpn_mpi/RPN_MPI_get_halo_timings
 ! DESCRIPTION
+! get a copy of the current timing stats
+!
 ! t      : array of 64 bit integers to receive timing stats
 ! n      : dimension of array t
 ! function value : number of halo exchanges performed since last stats reset
+! SEE ALSO
+!   Halo
+!
 ! SYNOPSIS
  function RPN_MPI_get_halo_timings(t,n) result(nt) BIND(C,name='RPN_MPI_get_halo_timings')   !InTf!
 ! IGNORE
@@ -367,7 +399,13 @@ end module RPN_MPI_halo_cache
   return
  end function RPN_MPI_get_halo_timings                                                       !InTf!
 
-!****f* rpn_mpi/RPN_MPI_reset_halo_timings reset timing stats
+!****f* rpn_mpi/RPN_MPI_reset_halo_timings
+! DESCRIPTION
+! reset timing stats
+!
+! SEE ALSO
+!   Halo
+!
 ! SYNOPSIS
  subroutine RPN_MPI_reset_halo_timings() BIND(C,name='RPN_MPI_reset_halo_timings')   !InTf!
 ! AUTHOR
@@ -380,7 +418,13 @@ end module RPN_MPI_halo_cache
   return
  end subroutine RPN_MPI_reset_halo_timings                                           !InTf!
 
-!****f* rpn_mpi/RPN_MPI_print_halo_timings print accumulated timing stats
+!****f* rpn_mpi/RPN_MPI_print_halo_timings
+! DESCRIPTION
+! print accumulated timing stats
+!
+! SEE ALSO
+!   Halo
+!
 ! SYNOPSIS
  subroutine RPN_MPI_print_halo_timings() BIND(C,name='RPN_MPI_print_halo_timings')   !InTf!
 ! AUTHOR
@@ -428,13 +472,18 @@ end module RPN_MPI_halo_cache
 1 format(a,10I10)
  end subroutine RPN_MPI_print_halo_timings                                           !InTf!
 
-! set information for halo exchange timings
-!****f* rpn_mpi/RPN_MPI_ez_halo_parms setup call for ez_halo routines
+!****f* rpn_mpi/RPN_MPI_ez_halo_parms
 ! DESCRIPTION
+! setup information for halo exchanges
+! setup call for ez_halo routines
+!
 ! row         : RPN_MPI communicator for the grid row this PE belongs to
 ! col         : RPN_MPI communicator for the grid column this PE belongs to
 ! mode == 'B' : add a MPI_Barrier call between the x and y phases of the exchange
 !               (used for timing purposes)
+! SEE ALSO
+!   RPN_MPI_ez_halo RPN_MPI_halo Halo
+!
 ! SYNOPSIS
  subroutine RPN_MPI_ez_halo_parms(row, col, mode) bind(C,name='RPN_MPI_ez_halo_parms')     !InTf!
 ! IGNORE

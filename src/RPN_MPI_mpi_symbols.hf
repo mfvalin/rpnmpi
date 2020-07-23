@@ -21,7 +21,7 @@
   integer, parameter :: mpi_symbols_version = 100022 ! version 1.00.02
 !===================================================================
 !
-! RPN_MPI wrappers equivalent MPI wrapped derived types (used to enforce interfaces)
+! RPN_MPI wrappers equivalent MPI wrapped derived types (used to check interfaces)
 !
   type, BIND(C) :: RPN_MPI_Loc     ! wrapped generic array address
     integer(C_INTPTR_T) :: a
@@ -80,7 +80,7 @@
   end type RPN_MPI_Win
 
 !===================================================================
-!  wrapped communicators, datatypes, operators
+!  wrapped communicators, datatypes, operators, etc...
 !  used to check interface prototypes
 !  can be passed to RPN_MPI prototyped subroutines
 !

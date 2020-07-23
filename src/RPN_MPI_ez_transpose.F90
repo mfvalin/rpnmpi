@@ -17,8 +17,9 @@
 ! ! Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ! ! Boston, MA 02111-1307, USA.
 ! !/
-!****P* rpn_mpi/transpose  (simplified/restricted version of MPI transpose package)
+!****P* rpn_mpi/Transpose
 ! DESCRIPTION
+! simplified/restricted version of MPI transpose package
 !
 ! layout for GEM solver with FFTW (array shapes)
 !
@@ -148,8 +149,9 @@ subroutine RPN_MPI_print_transpose_times
 1 format(A,8F10.6)
 end subroutine RPN_MPI_print_transpose_times
 
-!****f* rpn_mpi/RPN_MPI_transpose_setup setup routine for EZ transposes
+!****f* rpn_mpi/RPN_MPI_transpose_setup
 ! DESCRIPTION
+! setup routine for EZ transposes
 !
 ! setup routine that needs to be called before subsequent calls to
 ! RPN_MPI_ez_transpose_xz and RPN_MPI_ez_transpose_xy
@@ -196,8 +198,10 @@ end subroutine RPN_MPI_print_transpose_times
   return
  end subroutine RPN_MPI_transpose_setup                                  !InTf!
 
-!****f* rpn_mpi/RPN_MPI_ez_transpose_xz ez version of xz transpose
+!****f* rpn_mpi/RPN_MPI_ez_transpose_xz
 ! DESCRIPTION
+! ezversion of xz transpose
+!
 !  see RPN_MPI_transpose_xz for detailed description of arguments
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
@@ -227,8 +231,9 @@ end subroutine RPN_MPI_print_transpose_times
 
  end subroutine RPN_MPI_ez_transpose_xz                         !InTf!
 
-!****f* rpn_mpi/RPN_MPI_transpose_xz xz transpose
+!****f* rpn_mpi/RPN_MPI_transpose_xz
 ! DESCRIPTION
+! xz transpose
 !
 ! transpose z along x
 !   the z dimension gets distributed over the row, 
@@ -411,8 +416,10 @@ end subroutine RPN_MPI_print_transpose_times
   goto 1
  end subroutine RPN_MPI_transpose_xz_s !InTf!
 
-!****f* rpn_mpi/RPN_MPI_ez_transpose_xy ez version of xy transpose
+!****f* rpn_mpi/RPN_MPI_ez_transpose_xy
 ! DESCRIPTION
+! ez version of xy transpose
+!
 !  see RPN_MPI_transpose_xy for detailed description of arguments
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
@@ -438,8 +445,9 @@ end subroutine RPN_MPI_print_transpose_times
   call RPN_MPI_transpose_xy(z, zt, forward, lniy, lnjy, lnkx, colcom, ierr)
  end subroutine RPN_MPI_ez_transpose_xy                         !InTf!
 
-!****f* rpn_mpi/RPN_MPI_transpose_xy xy transpose
+!****f* rpn_mpi/RPN_MPI_transpose_xy
 ! DESCRIPTION
+! xy transpose
 !
 ! transpose x along y, 
 !   the original and transposed arrays have the same dimensions

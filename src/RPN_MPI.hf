@@ -1,6 +1,5 @@
 #include <RPN_MPI_macros.hf>
-#include <RPN_MPI_mpi_symbols.hf>
-#include <RPN_MPI_mpi_layout.hf>
+#include <RPN_MPI_mpi_definitions.hf>
 #if defined(IN_RPN_MPI_LIBRARY)
 #include <RPN_MPI_nulls.hf>
 #endif

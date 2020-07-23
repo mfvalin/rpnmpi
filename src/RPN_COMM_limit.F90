@@ -134,7 +134,7 @@ end
 103   format(A,100I2)
       end subroutine RPN_COMM_test_limit
 #endif
-!**function  RPN_COMM_limit_2 global domain decomposition function (along one dimension)
+!  function  RPN_COMM_limit_2 global domain decomposition function (along one dimension)
 !InTf!
 !****f* RPN_COMM/RPN_COMM_limit_2
 ! SYNOPSIS

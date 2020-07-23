@@ -78,7 +78,16 @@
 !       |        % row         ! block PEs in the same row (same j/y ordinal)
 !       |        % column      ! block PEs in the same column (same i/x ordinal)
 !======================================================================================================
-!  alternative srtructure
+!  alternative structure (will be the final one)
+!
+!       provides internal RPN_MPI MPI information is now available, like:
+!
+!       l%grid%service%comm    ! communicator for service(IO) PEs in a grid
+!       l%sgrd%compute%rank    ! rank in a supergrid compute PEs communicator
+!       l%grid%compute%comm    ! communicator for compute PEs in a grid
+!       l%grid%column%comm     ! grid column communicator
+!       l%grid%row%size        ! size of grid row communicator
+!
 !
 !  all leaf elements are of type RPN_MPI_Fcom (communicator, size, rank)
 !
@@ -125,7 +134,7 @@
 ! 	% column      ! block PEs in the same column (same i/x ordinal)
 !
 !================================================================================================
-!  the _f wrapped type definitions use comm/size/rank trios
+!  the _f wrapped type definitions use comm/size/rank trios, comm, rank, size are leaves (no % after)
 !
 !================================================================================================
 !  the _c wrapped type definitions MUST BE EQUIVALENT to their non wrapped sibling definition
@@ -136,8 +145,12 @@
 !  the wrapped form
 !  communicators are wrapped, but rank and size remain plain integers
 !================================================================================================
-! subgrids (blocks of PEs within a grid) , tentative
-  type, BIND(C) :: subgrid_f           ! wrapped type for communicators
+! N.B.
+! RPN_MPI_mpi_symbols.hf needs to be included BEFORE this file 
+!        (provides derived types RPN_MPI_Fcom, RPN_MPI_Comm )
+!================================================================================================
+! subgrids (blocks of PEs within a grid) , tentative, 3 flavors
+  type, BIND(C) :: subgrid_f           ! wrapped type for communicator trios (comm/rank/size)
     type(RPN_MPI_Fcom) :: all
     type(RPN_MPI_Fcom) :: row
     type(RPN_MPI_Fcom) :: column
@@ -147,13 +160,14 @@
     type(RPN_MPI_Comm) :: row
     type(RPN_MPI_Comm) :: column
   end type
-  type, BIND(C) :: subgrid
+  type, BIND(C) :: subgrid             ! integer communicators
     integer(C_INT) :: all
     integer(C_INT) :: row
     integer(C_INT) :: column
   end type
-! grids and supergrids
-  type, BIND(C) :: mpigrid_f           ! wrapped type for communicators
+!================================================================================================
+! grids and supergrids, 3 flavors
+  type, BIND(C) :: mpigrid_f           ! wrapped type using communicator trios (comm/rank/size)
     type(RPN_MPI_Fcom) :: all          ! all PEs, compute and service
     type(RPN_MPI_Fcom) :: compute      ! compute PEs
     type(RPN_MPI_Fcom) :: service      ! service (Input/Output) PEs
@@ -177,7 +191,7 @@
     type(RPN_MPI_Comm) :: row          ! undefined in a supergrid, information for a grid row
     type(RPN_MPI_Comm) :: column       ! undefined in a supergrid, information for a grid column
   end type
-  type, BIND(C) :: mpigrid
+  type, BIND(C) :: mpigrid             ! integer communicators
     integer(C_INT) :: all              ! all PEs, compute and service
     integer(C_INT) :: compute          ! compute PEs
     integer(C_INT) :: service          ! service (Input/Output) PEs
@@ -189,9 +203,9 @@
     integer(C_INT) :: row              ! undefined in a supergrid, information for a grid row
     integer(C_INT) :: column           ! undefined in a supergrid, information for a grid column
   end type
-  
-! applications (domains) and world (less information than grids and supergrids)
-  type, BIND(C) :: application_f       ! wrapped type for communicators
+!================================================================================================
+! applications (domains) and world (less information than grids and supergrids), 3 flavors
+  type, BIND(C) :: application_f       ! wrapped type using communicator trios (comm/rank/size)
     type(RPN_MPI_Fcom) :: all          ! all PEs, compute and service
     type(RPN_MPI_Fcom) :: same_node    ! PEs in same SMP node (compute and service)
     type(RPN_MPI_Fcom) :: same_numa    ! PEs in same numa space (compute and service)
@@ -201,13 +215,13 @@
     type(RPN_MPI_Comm) :: same_node    ! PEs in same SMP node (compute and service)
     type(RPN_MPI_Comm) :: same_numa    ! PEs in same numa space (compute and service)
   end type
-  type, BIND(C) :: application
+  type, BIND(C) :: application         ! integer communicators
     integer(C_INT) :: all              ! all PEs, compute and service
     integer(C_INT) :: same_node        ! PEs in same SMP node (compute and service)
     integer(C_INT) :: same_numa        ! PEs in same numa space (compute and service)
   end type
-  
-! the sets of information
+!================================================================================================
+! the sets of information, 2 flavors
   type, BIND(C) :: grid_hierarchy_c    ! wrapped type for communicators
     type(application_c) :: wrld        ! the entire world, conrains all applications
     type(application_c) :: appl        ! application (domain), contains (M identical supergrids)
@@ -222,28 +236,10 @@
     type(mpigrid)     :: grid          ! basic computation grid
     type(subgrid)     :: blck          ! block of PEs inside a grid (subgrid)
   end type
-  
+!================================================================================================
 ! the three usual associates, communicators, rank, and size + general info
   integer(C_INT), parameter :: layout_version = 100011 ! version 1.00.01
-  type, BIND(C) :: mpi_layout          ! wrapped type for communicators
-    integer(C_INT) :: version = layout_version
-    integer(C_INT) :: host             ! SMP host id
-    integer(C_INT) :: numa             ! numa space for this PE
-    integer(C_INT) :: colors(3)        ! application / supergrid / grid "color"
-    type(grid_hierarchy_c) :: comm       ! communicators
-    type(grid_hierarchy) :: rank       ! rank in communicator
-    type(grid_hierarchy) :: size       ! size of communicator
-  end type
-  type, BIND(C) :: mpi_layout_internal
-    integer(C_INT) :: version = layout_version
-    integer(C_INT) :: host             ! SMP host id
-    integer(C_INT) :: numa             ! numa space for this PE
-    integer(C_INT) :: colors(3)        ! application / supergrid / grid "color"
-    type(grid_hierarchy) :: comm       ! communicators
-    type(grid_hierarchy) :: rank       ! rank in communicator
-    type(grid_hierarchy) :: size       ! size of communicator
-  end type
-  type, BIND(C) :: mpi_layout_f
+  type, BIND(C) :: mpi_layout_f        ! wrapped type using communicator trios (comm/rank/size)
     integer(C_INT) :: version = layout_version
     integer(C_INT) :: host             ! SMP host id
     integer(C_INT) :: numa             ! numa space for this PE
@@ -254,6 +250,24 @@
     type(mpigrid_f)     :: grid        ! basic computation grid
     type(subgrid_f)     :: blck        ! block of PEs inside a grid (subgrid)
   end type mpi_layout_f
+  type, BIND(C) :: mpi_layout          ! wrapped type for communicators
+    integer(C_INT) :: version = layout_version
+    integer(C_INT) :: host             ! SMP host id
+    integer(C_INT) :: numa             ! numa space for this PE
+    integer(C_INT) :: colors(3)        ! application / supergrid / grid "color"
+    type(grid_hierarchy_c) :: comm     ! communicators
+    type(grid_hierarchy)   :: rank     ! rank in communicator
+    type(grid_hierarchy)   :: size     ! size of communicator
+  end type
+  type, BIND(C) :: mpi_layout_internal ! integer values, independent comm/rank/size sub components
+    integer(C_INT) :: version = layout_version
+    integer(C_INT) :: host             ! SMP host id
+    integer(C_INT) :: numa             ! numa space for this PE
+    integer(C_INT) :: colors(3)        ! application / supergrid / grid "color"
+    type(grid_hierarchy) :: comm       ! communicators
+    type(grid_hierarchy) :: rank       ! rank in communicator
+    type(grid_hierarchy) :: size       ! size of communicator
+  end type
 !================================================================================================
 ! PE topologies within a grid/subgrid
 
@@ -271,6 +285,21 @@
     type(C_PTR)        :: ljs = C_NULL_PTR       ! local lengths along j
   end type RPN_MPI_Ftopo
 
+  type, BIND(C) :: RPN_MPI_topo    ! 2D grid topology with integer MPI communicators
+    integer(C_INT)    :: version = mpi_symbols_version
+    type(RPN_MPI_csr) :: grd       ! the 2D grid
+    type(RPN_MPI_csr) :: row       ! the grid row
+    type(RPN_MPI_csr) :: col       ! the grid column
+    integer(C_INT)    :: li        ! local length along i
+    integer(C_INT)    :: lj        ! local length along j
+    integer(C_INT)    :: gi        ! global length along i
+    integer(C_INT)    :: gj        ! global length along j
+    ! watch 64 bit alignment here (14 integers above, should be OK for now)
+    type(C_PTR)       :: lis = C_NULL_PTR       ! local lengths along i
+    type(C_PTR)       :: ljs = C_NULL_PTR       ! local lengths along j
+  end type RPN_MPI_topo
+
+! edge flags, RPN_MPI_Fedge%parm
   integer, parameter  :: EDGE_NONE = B'0000'   ! not a face edge
   integer, parameter  :: EDGE_YY   = B'0111'   ! E or W edge, partnder is E or W edge
 !   integer, parameter  :: EDGE_YX   = B'0110'   ! E or W edge, partnder is N or S edge (EDGE_XY is used)
@@ -286,6 +315,7 @@
     integer(C_INT)     :: len1     ! size of partner 1 row or column (highest face number)
   end type RPN_MPI_Fedge
 
+! PE topology for a 3D "cube" of PEs
   type, BIND(C) :: RPN_MPI_Fcube   ! 3D cube topology with RPNMPI (wrapped) communicators
     integer(C_INT)     :: version = mpi_symbols_version
     type(RPN_MPI_Fcom) :: cube
@@ -297,17 +327,3 @@
     type(RPN_MPI_Fedge):: east    ! east edge description
     type(RPN_MPI_Fedge):: west    ! west edge description
   end type RPN_MPI_Fcube
-
-  type, BIND(C) :: RPN_MPI_topo    ! 2D grid topology with integer MPI communicators
-    integer(C_INT)    :: version = mpi_symbols_version
-    type(RPN_MPI_csr) :: grd       ! the 2D grid
-    type(RPN_MPI_csr) :: row       ! the grid row
-    type(RPN_MPI_csr) :: col       ! the grid column
-    integer(C_INT)    :: li        ! local length along i
-    integer(C_INT)    :: lj        ! local length along j
-    integer(C_INT)    :: gi        ! global length along i
-    integer(C_INT)    :: gj        ! global length along j
-    ! watch 64 bit alignment here (14 integers above, should be OK for now)
-    type(C_PTR)       :: lis = C_NULL_PTR       ! local lengths along i
-    type(C_PTR)       :: ljs = C_NULL_PTR       ! local lengths along j
-  end type RPN_MPI_topo

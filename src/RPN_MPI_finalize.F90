@@ -18,7 +18,7 @@
 ! ! Boston, MA 02111-1307, USA.
 ! !/
 !InTf!
-      SUBROUTINE RPN_MPI_finalize(ierr) !InTf!
+      subroutine RPN_MPI_finalize(ierr) !InTf!
 
 !	Luc Corbeil, 2000-11-21
 !	mpi finalize
@@ -36,4 +36,4 @@
       call mpi_finalize(ierr)
 
       return
-      end SUBROUTINE RPN_MPI_finalize         !InTf!
+      end subroutine RPN_MPI_finalize         !InTf!
