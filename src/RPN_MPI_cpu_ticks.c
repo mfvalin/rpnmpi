@@ -1,6 +1,12 @@
 #include <stdint.h>
 
+#if defined(__aarch64__)
 static uint64_t time0;
+#endif
+
+#if !defined(__x86_64__) && !defined(__aarch64__)
+static uint64_t time64;
+#endif
 
 #pragma weak cpu_real_time_ticks__=cpu_real_time_ticks
 #pragma weak cpu_real_time_ticks_=cpu_real_time_ticks
@@ -21,8 +27,8 @@ uint64_t cpu_real_time_ticks(void) {
   return time0;
 #endif
 #if !defined(__x86_64__) && !defined(__aarch64__)
-  time0 = cpu_real_time_clock();  // a tick will be a microsecond in this case
-  return time0;
+  time64 = cpu_real_time_clock();  // a tick will be a microsecond in this case
+  return time64;
 #endif
 }
 
