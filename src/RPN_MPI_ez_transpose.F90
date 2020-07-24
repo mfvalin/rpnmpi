@@ -162,6 +162,8 @@ end subroutine RPN_MPI_print_transpose_times
 ! col_comm  : column communicator for transpose_xy
 ! ierr      : error flag, same as MPI
 !
+! SEE ALSO
+!  Transpose
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 ! SYNOPSIS
@@ -201,8 +203,10 @@ end subroutine RPN_MPI_print_transpose_times
 !****f* rpn_mpi/RPN_MPI_ez_transpose_xz
 ! DESCRIPTION
 ! ezversion of xz transpose
+! see RPN_MPI_transpose_xz for detailed description of arguments
 !
-!  see RPN_MPI_transpose_xz for detailed description of arguments
+! SEE ALSO
+!  RPN_MPI_transpose_xz Transpose
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 ! SYNOPSIS
@@ -259,6 +263,8 @@ end subroutine RPN_MPI_print_transpose_times
 ! row_comm  : row communicator for transpose
 ! ierr      : error flag, same as MPI
 !
+! SEE ALSO
+!  Transpose
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 ! SYNOPSIS
@@ -423,6 +429,8 @@ end subroutine RPN_MPI_print_transpose_times
 !  see RPN_MPI_transpose_xy for detailed description of arguments
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
+! SEE ALSO
+!  RPN_MPI_transpose_xy Transpose
 ! SYNOPSIS
  subroutine RPN_MPI_ez_transpose_xy(z, zt, forward, lniy, lnjy, lnkx, ierr) !InTf!
 ! IGNORE
@@ -480,6 +488,8 @@ end subroutine RPN_MPI_print_transpose_times
 ! col_comm  : communicator for this transpose
 ! ierr      : error flag, same as MPI
 !
+! SEE ALSO
+!  RPN_MPI_ez_transpose_xy Transpose
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 ! SYNOPSIS

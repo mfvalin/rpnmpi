@@ -248,6 +248,8 @@ end
       end function RPN_COMM_limit_2                       !InTf!
 !InTf!
 !****f* RPN_COMM/RPN_COMM_limit
+! SEE ALSO
+!   RPN_COMM_limit_2
 ! SYNOPSIS
       integer function RPN_COMM_limit  &                   !InTf!
          (my_id, npe, gmin, gmax, lmini, lmaxi,count, offset) !InTf!
