@@ -110,7 +110,7 @@ end module rpncomm_com
       implicit none                                 !InTf!
       character(len=*), intent(IN) :: com           !InTf!
       character(len=32) comm
-      integer :: i, indx
+      integer :: indx
 
       if(.not. associated(com_tab)) call init_com_tab
       call rpn_comm_low2up(com,comm)

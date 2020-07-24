@@ -59,42 +59,37 @@
       integer, intent(in)    :: MultiGrids                           !InTf!
       integer, intent(in)    :: Grids                                !InTf!
 !arguments
-!  I	Userinit	User routine that will be called by PE 0 to
-!		get the processor grid topology if it is not supplied
-!		(Pex .eq. 0 ) or (Pey .eq. 0)
-!  O	Pelocal	PE rank (number) of local PE
-!  O	Petotal	Number of PEs in job
-!  I/O	Pex	Number of PEs along the X axis. If Pex=0 upon entry
-!		it will be set to the proper value upon exit
-!  I/O	Pey	Number of PEs along the Y axis. If Pey=0 upon entry
-!		it will be set to the proper value upon exit
-!  I    MultiGrids  number of simultaneous MultiGrids
+!  I   Userinit   User routine that will be called by PE 0 to
+!                 get the processor grid topology if it is not supplied
+!                 (Pex .eq. 0 ) or (Pey .eq. 0)
+!  O   Pelocal    PE rank (number) of local PE
+!  O   Petotal    Number of PEs in job
+!  I/O Pex        Number of PEs along the X axis. If Pex=0 upon entry
+!                 it will be set to the proper value upon exit
+!  I/O Pey        Number of PEs along the Y axis. If Pey=0 upon entry
+!                 it will be set to the proper value upon exit
+!  I   MultiGrids number of simultaneous MultiGrids
 !
 !notes
-!	processor topology common /pe/ will be filled here
-!	positions are calculated from 0 (ORIGIN 0)
-!!
+!        processor topology common /pe/ will be filled here
+!        positions are calculated from 0 (ORIGIN 0)
+!
 !
 #include <RPN_MPI_system_interfaces.hf>
 !
-      integer ierr, i, j, count, npe, reste, nslots, key, status
+      integer ierr, i, j, count, status
       logical mpi_started
-      integer gr1, gr2
-      INTEGER newgroup,rowcomm
-      integer, allocatable, dimension(:) :: proc_indomm
-      integer unit, ndom, lndom, nproc, procmax,procmin
+      integer unit
 !       type(domm), allocatable, dimension(:) :: locdom
       logical ok, allok
-      logical RPN_COMM_grank
       integer RPN_COMM_petopo, RPN_COMM_version
       character *4096 SYSTEM_COMMAND,SYSTEM_COMMAND_2
       character *256 , dimension(:), allocatable :: directories
       character *256 :: my_directory, my_directory_file
-      character *32 access_mode
       integer ncolors,my_color,directory_file_num,iun
       integer,dimension(:,:),allocatable::colors
       integer,dimension(:),allocatable::colortab
-      integer version_marker, version_max, version_min
+      integer version_marker, version_max
       integer pe_my_location(8)
 !       external RPN_COMM_unbind_process
       integer, external :: RPN_COMM_get_a_free_unit, RPN_COMM_set_timeout_alarm, fnom
@@ -382,46 +377,46 @@
 !     Grid initialization, get PEs along X and Y
 !
 !      write(rpn_u,*)'READY to call UserInit'
-	if(pe_me .eq. pe_pe0)then
-	  if ( Pex.eq.0 .or. Pey.eq.0  ) then ! get processor topology
-	    WORLD_pe(1)=pe_tot
-	    WORLD_pe(2)=1
-	    call Userinit(WORLD_pe(1),WORLD_pe(2))
-	    if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
-	      ok = .false.
-	      write(rpn_u,*) 'RPN_COMM_init: Inconsistency between'
-	      write(rpn_u,*) 'userinit Subroutine and total number'
+        if(pe_me .eq. pe_pe0)then
+          if ( Pex.eq.0 .or. Pey.eq.0  ) then ! get processor topology
+            WORLD_pe(1)=pe_tot
+            WORLD_pe(2)=1
+            call Userinit(WORLD_pe(1),WORLD_pe(2))
+            if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
+              ok = .false.
+              write(rpn_u,*) 'RPN_COMM_init: Inconsistency between'
+              write(rpn_u,*) 'userinit Subroutine and total number'
             write(rpn_u,*) 'of PE: please check'
-	    endif
-	    if(diag_mode.ge.1) then
+            endif
+            if(diag_mode.ge.1) then
             write(rpn_u,*)'Requested topology = ',&
      &                    WORLD_pe(1),' by ',WORLD_pe(2)
-	      write(rpn_u,*)'Grid will use ',&
+              write(rpn_u,*)'Grid will use ',&
      &                    pe_dommtot,' processes'
           endif
         else ! ( Pex.eq.0 .or. Pey.eq.0  )
            write(rpn_u,*) 'RPN_COMM_init: Forced topology'
-	     WORLD_pe(1) = Pex
-	     WORLD_pe(2) = Pey
-	     if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
-	       ok = .false.
-	       write(rpn_u,*) 'RPN_COMM_init: Inconsistency between Pex'
-	       write(rpn_u,*) 'and Pey args and total number of PE: '
-	       write(rpn_u,*) 'please check'
-	    endif
-	    if(diag_mode.ge.1)&
+             WORLD_pe(1) = Pex
+             WORLD_pe(2) = Pey
+             if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
+               ok = .false.
+               write(rpn_u,*) 'RPN_COMM_init: Inconsistency between Pex'
+               write(rpn_u,*) 'and Pey args and total number of PE: '
+               write(rpn_u,*) 'please check'
+            endif
+            if(diag_mode.ge.1)&
      &       write(rpn_u,*)'Requested topology = ',WORLD_pe(1),' by '&
      &             ,WORLD_pe(2)
-	  endif ! ( Pex.eq.0 .or. Pey.eq.0  )
+          endif ! ( Pex.eq.0 .or. Pey.eq.0  )
 !
-	  if(WORLD_pe(1)*WORLD_pe(2) .gt. pe_dommtot) then
-	    write(rpn_u,*)' ERROR: not enough PEs for decomposition '
-	    write(rpn_u,*)' REQUESTED=',WORLD_pe(1)*WORLD_pe(2),&
+          if(WORLD_pe(1)*WORLD_pe(2) .gt. pe_dommtot) then
+            write(rpn_u,*)' ERROR: not enough PEs for decomposition '
+            write(rpn_u,*)' REQUESTED=',WORLD_pe(1)*WORLD_pe(2),&
      &                  ' AVAILABLE=',pe_dommtot
-	    ok = .false.
-	  endif
+            ok = .false.
+          endif
 
-	endif  ! (pe_me .eq. pe_pe0)
+        endif  ! (pe_me .eq. pe_pe0)
 !
 !        write(rpn_u,*)'after UserInit'
       call mpi_allreduce(ok, allok, 1, MPI_LOGICAL,&
@@ -432,41 +427,41 @@
            stop
       endif
 !
-!	send WORLD topology to all PEs. That will allow all PEs
-!	to compute other PE topology parameters locally.
+!        send WORLD topology to all PEs. That will allow all PEs
+!        to compute other PE topology parameters locally.
 !       for doing this, we need to define some basic domains
 !       communicators.
 
-	call MPI_COMM_rank(pe_indomm,pe_medomm,ierr)
-	pe_defcomm = pe_indomm
-	pe_defgroup = pe_gr_indomm
+        call MPI_COMM_rank(pe_indomm,pe_medomm,ierr)
+        pe_defcomm = pe_indomm
+        pe_defgroup = pe_gr_indomm
 !
 !       broadcast number of PEs along X and Y axis
 !       broadcast PE block sizes (deltai and deltaj)
 !
         WORLD_pe(3) = deltai
         WORLD_pe(4) = deltaj
-	call MPI_BCAST(WORLD_pe,size(WORLD_pe),MPI_INTEGER,0,&
-     &	               pe_indomm,ierr)
-	pe_nx  = WORLD_pe(1)
-	pe_ny  = WORLD_pe(2)
-	deltai = WORLD_pe(3)
-	deltaj = WORLD_pe(4)
+        call MPI_BCAST(WORLD_pe,size(WORLD_pe),MPI_INTEGER,0,&
+     &                       pe_indomm,ierr)
+        pe_nx  = WORLD_pe(1)
+        pe_ny  = WORLD_pe(2)
+        deltai = WORLD_pe(3)
+        deltaj = WORLD_pe(4)
 !
-	if ( Pex.eq.0 .or. Pey.eq.0  ) then ! return processor topology
-	  Pex = WORLD_pe(1)
-	  Pey = WORLD_pe(2)
-	endif
+        if ( Pex.eq.0 .or. Pey.eq.0  ) then ! return processor topology
+          Pex = WORLD_pe(1)
+          Pey = WORLD_pe(2)
+        endif
 !
-!	pe_pe0 is not equal to 0 if there are more than one domain
-!	computational grid
+!        pe_pe0 is not equal to 0 if there are more than one domain
+!        computational grid
 !
-	count = pe_pe0
+        count = pe_pe0
 !
-!	fill tables containing the position along the X axis (pe_xtab)
-!	and along the Y axis (pe_ytab) for all processors
+!        fill tables containing the position along the X axis (pe_xtab)
+!        and along the Y axis (pe_ytab) for all processors
 !        write(rpn_u,*)'calling petopo'
-	ierr = RPN_COMM_petopo(WORLD_pe(1),WORLD_pe(2))
+        ierr = RPN_COMM_petopo(WORLD_pe(1),WORLD_pe(2))
 !        write(rpn_u,*)'after petopo'
 
       pe_my_location(1) = pe_mex
@@ -556,14 +551,14 @@
       implicit none
       integer :: i
       character (len=16) :: access_mode
-	RPN_COMM_get_a_free_unit_x=-1
-	do i = 99,1,-1  ! find an available unit number
-	  inquire(UNIT=i,ACCESS=access_mode)
-	  if(trim(access_mode) == 'UNDEFINED')then ! found
-	    RPN_COMM_get_a_free_unit_x = i
-	    exit
-	  endif
-	enddo
+        RPN_COMM_get_a_free_unit_x=-1
+        do i = 99,1,-1  ! find an available unit number
+          inquire(UNIT=i,ACCESS=access_mode)
+          if(trim(access_mode) == 'UNDEFINED')then ! found
+            RPN_COMM_get_a_free_unit_x = i
+            exit
+          endif
+        enddo
       return
       end function RPN_COMM_get_a_free_unit_x                         !InTf!
       function RPN_COMM_set_timeout_alarm_x(seconds) result(seconds_since)  !InTf!

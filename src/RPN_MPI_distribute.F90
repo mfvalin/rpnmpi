@@ -100,9 +100,9 @@
       run = run + npts
       offset(i) = total
       do while (run > 0)
-	count(i) = count(i) + 1
-	total = total + 1
-	run = run - npe
+        count(i) = count(i) + 1
+        total = total + 1
+        run = run - npe
       enddo
     enddo
 

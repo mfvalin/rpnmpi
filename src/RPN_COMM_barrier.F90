@@ -27,8 +27,8 @@
         end module RPN_COMM_barrier_priv
 !InTf!
         SUBROUTINE RPN_COMM_barrier(com,ierr)                    !InTf!
-!	Luc Corbeil, 2000-11-21
-!	mpi barrier
+!        Luc Corbeil, 2000-11-21
+!        mpi barrier
         use RPN_COMM_barrier_priv
         implicit none                                            !InTf!
         integer, intent(OUT) :: ierr                             !InTf!
@@ -41,7 +41,9 @@
 !         logical RPN_COMM_grank
         real *8 t1,t2
 
-	comm=rpn_comm_comm(com)
+        comm=rpn_comm_comm(com)
+        t1 = 0.0
+        t2 = 0.0
 
 !         if(.not.RPN_COMM_grank(com)) return
         if(detail > 0) then
@@ -73,7 +75,7 @@
             call mpi_gather(t2,1,MPI_DOUBLE_PRECISION,times,1,MPI_DOUBLE_PRECISION,0,comm,ierr)
           endif
         endif
-	return
+        return
       end SUBROUTINE RPN_COMM_barrier                                !InTf!
 !InTf!
         integer function RPN_COMM_barrier_data(level,values,nvalues)                                !InTf!

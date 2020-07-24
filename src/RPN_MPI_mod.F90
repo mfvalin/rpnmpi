@@ -40,13 +40,13 @@ module rpn_mpi_comm_0
 !
   integer :: rpn_u = 6
 !
-!	GLOBAL information, will be BROADCAST
+!        GLOBAL information, will be BROADCAST
 !
-!	WORLD_pe(1) number of PEs along x in grid
-!	WORLD_pe(2) number of PEs along y in grid
-!	WORLD_pe(3) deltai, size of PE blocks along x
-!	WORLD_pe(4) deltaj, size of PE blocks along Y
-!	WORLD_pe(5:10) provision for future expansion
+!        WORLD_pe(1) number of PEs along x in grid
+!        WORLD_pe(2) number of PEs along y in grid
+!        WORLD_pe(3) deltai, size of PE blocks along x
+!        WORLD_pe(4) deltaj, size of PE blocks along Y
+!        WORLD_pe(5:10) provision for future expansion
 !
   integer WORLD_pe(10)
 !
@@ -54,12 +54,12 @@ module rpn_mpi_comm_0
   logical :: full_async_exch=.false.  ! fully asynchronous halo exchange (level 2)
   logical :: rpn_ew_ext_l = .false.   ! extended halo option (haloy extra rows on North and South tiles)
 !
-!	domain boundary flags, LOGICAL
-!	.true. if a PE(TILE) is on a domain edge
-!	all 4 values .true. if single tile
-!	normally set by routine rpn_mpi_init
+! domain boundary flags, LOGICAL
+! .true. if a PE(TILE) is on a domain edge
+! all 4 values .true. if single tile
+! normally set by routine rpn_mpi_init
 !
-	logical bnd_east,bnd_west,bnd_north,bnd_south
+  logical bnd_east,bnd_west,bnd_north,bnd_south
 end module rpn_mpi_comm_0
 
 module rpn_mpi_comm_1
@@ -70,27 +70,28 @@ module rpn_mpi_comm_1
 !       the following block is used mainly by rpn_comm,
 !       but is filled by rpn_mpi for legacy support
 !       ---------------------------------------------------------------------
-!	characteristics of the local PE
-!	plus some PE grid topology information
-!	normally set by routine rpn_mpi_init
+!        characteristics of the local PE
+!        plus some PE grid topology information
+!        normally set by routine rpn_mpi_init
 !
-!	pe_me	PE number of this PE
-!	pe_mex	 x coordinate of this PE in domain (origin 0)
-!	pe_mey	 y coordinate of this PE in domain (origin 0)
-!	pe_myrow communicator for PEs in same ROW(same pe_mey)
-!	pe_mycol communicator for PEs in same COLUMN(same pe_mex)
-!	pe_tot	 total number of PEs involved in a grid
-!	pe_nx	 number of PEs along x axis in a grid
-!	pe_ny	 number of PEs along y axis in a grid
-!	pe_pe0	 PE number of first PE in a grid (normally zero)
-!	pe_extra flag =1 if pe in compute grid, =0 otherwise
-!	pe_grid	 communicator for PEs in grid and out of grid
+!        pe_me    PE number of this PE
+!        pe_mex   x coordinate of this PE in domain (origin 0)
+!        pe_mey   y coordinate of this PE in domain (origin 0)
+!        pe_myrow communicator for PEs in same ROW(same pe_mey)
+!        pe_mycol communicator for PEs in same COLUMN(same pe_mex)
+!        pe_tot   total number of PEs involved in a grid
+!        pe_nx    number of PEs along x axis in a grid
+!        pe_ny    number of PEs along y axis in a grid
+!        pe_pe0   PE number of first PE in a grid (normally zero)
+!        pe_extra flag =1 if pe in compute grid, =0 otherwise
+!        pe_grid   communicator for PEs in grid and out of grid
 !       pe_ingrid  communicator for PEs in grid
 !       pe_outgrid communicator for PEs out of grid
-!	pe_bloc	 communicator for internal blocs in grid
+!       pe_bloc    communicator for internal blocs in grid
 !       pe_blocmaster communicator for bloc_corner PEs in grid
-!	pe_id	 matrix of PE numbers in grid
-!		 pe_me=pe_id(pe_mex,pe_mey)
+!       pe_id       matrix of PE numbers in grid
+!
+!                 pe_me=pe_id(pe_mex,pe_mey)
 !
 !
   integer :: pe_me,pe_mex,pe_mey,pe_myrow,pe_mycol
@@ -131,10 +132,10 @@ module rpn_mpi_comm_2
 !       options
 !       ---------------------------------------------------------------------
 !
-!	pe_optn  table of options ( option name)
-!	pe_opiv  values of integer options
-!	pe_oprv  values of real options
-!	pe_opcv  values of character options
+!        pe_optn  table of options ( option name)
+!        pe_opiv  values of integer options
+!        pe_oprv  values of real options
+!        pe_opcv  values of character options
   integer, parameter :: MAX_OPTN=10
   character *4 pe_optn(MAX_OPTN)
   integer :: pe_opiv(MAX_OPTN)

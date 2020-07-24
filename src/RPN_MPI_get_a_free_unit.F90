@@ -21,14 +21,14 @@
       implicit none
       integer :: i
       character (len=16) :: access_mode
-	RPN_MPI_get_a_free_unit=-1
-	do i = 99,1,-1  ! find an available unit number
-	  inquire(UNIT=i,ACCESS=access_mode)
-	  if(trim(access_mode) == 'UNDEFINED')then ! found
-	    RPN_MPI_get_a_free_unit = i
-	    exit
-	  endif
-	enddo
+      RPN_MPI_get_a_free_unit=-1
+      do i = 99,1,-1  ! find an available unit number
+        inquire(UNIT=i,ACCESS=access_mode)
+        if(trim(access_mode) == 'UNDEFINED')then ! found
+          RPN_MPI_get_a_free_unit = i
+          exit
+        endif
+      enddo
       return
       end function RPN_MPI_get_a_free_unit                         !InTf!
 !     legacy routine for rpn_comm routines

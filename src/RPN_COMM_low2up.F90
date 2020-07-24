@@ -37,8 +37,8 @@
             S2(I:I) = S1(I:I)
           ENDIF
  10     CONTINUE
-	DO 15 I = L+1,L2
-	  S2(I:I) = ' '
+        DO 15 I = L+1,L2
+          S2(I:I) = ' '
  15     CONTINUE
         RETURN
 

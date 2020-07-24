@@ -170,10 +170,10 @@ contains
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
 ! white lie in published interface, g is published as an address passed by value
-  integer, intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
-  integer, intent(IN)    :: row,col
+  integer(C_INT), intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
+  integer(C_INT), intent(IN)    :: row,col
 
-  integer :: i, j, k, nw, ier
+  integer :: j, k, nw, ier
   integer, dimension(MPI_STATUS_SIZE) :: status
   integer, dimension(halox,lnj,nk) :: halo_from_west, halo_to_west
   integer, dimension(halox,lnj,nk) :: halo_from_east, halo_to_east
@@ -207,19 +207,19 @@ contains
     t(2) = cpu_real_time_ticks()
     if(rankx .eq. 0)then             ! west PE, send to east, get from east
       call MPI_SENDRECV(halo_to_east  , nw, MPI_INTEGER, rankx+1, rankx, &
-			halo_from_east, nw, MPI_INTEGER, rankx+1, rankx+1, &
-			rowcom, STATUS, ier)
+                        halo_from_east, nw, MPI_INTEGER, rankx+1, rankx+1, &
+                        rowcom, STATUS, ier)
     elseif(rankx .lt. sizex-1) then  ! middle PE, (get from west, send to east) (get from east, send to west)
       call MPI_SENDRECV(halo_to_east  , nw, MPI_INTEGER, rankx+1, rankx, &
-			halo_from_west, nw, MPI_INTEGER, rankx-1, rankx-1, &
-			rowcom, STATUS, ier)
+                        halo_from_west, nw, MPI_INTEGER, rankx-1, rankx-1, &
+                        rowcom, STATUS, ier)
       call MPI_SENDRECV(halo_to_west  , nw, MPI_INTEGER, rankx-1, rankx, &
-			halo_from_east, nw, MPI_INTEGER, rankx+1, rankx+1, &
-			rowcom, STATUS, ier)
+                        halo_from_east, nw, MPI_INTEGER, rankx+1, rankx+1, &
+                        rowcom, STATUS, ier)
     else                             ! east PE, send to west, get from west
       call MPI_SENDRECV(halo_to_west  , nw, MPI_INTEGER, rankx-1, rankx, &
-			halo_from_west, nw, MPI_INTEGER, rankx-1, rankx-1, &
-			rowcom, STATUS, ier)
+                        halo_from_west, nw, MPI_INTEGER, rankx-1, rankx-1, &
+                        rowcom, STATUS, ier)
     endif
     t(3) = cpu_real_time_ticks()
     do k = 1, nk          ! insert west and east side of array simultaneously
@@ -300,8 +300,8 @@ contains
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
 ! white lie in published interface, g is published as an address passed by value
-  integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
-  integer, intent(IN)    :: row,col
+  integer(C_INT), intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
+  integer(C_INT), intent(IN)    :: row,col
 
   call RPN_MPI_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,row,col)
   return
@@ -322,15 +322,15 @@ contains
 ! IGNORE
   use ISO_C_BINDING
   implicit none
-!!  import :: RPN_MPI_Loc                                                       !InTf!
+!!  import :: RPN_MPI_Loc, C_INT                                                !InTf!
 ! ARGUMENTS
-  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
+  integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
 !! type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
 ! white lie in published interface, g is published as an address passed by value
-  integer, intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
+  integer(C_INT), intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
 
   if(rowcom == MPI_COMM_NULL .or. colcom == MPI_COMM_NULL) then
     ! get the appropriate row and column communicators from the internal RPN_MPI data
@@ -355,15 +355,15 @@ contains
 ! IGNORE
   use ISO_C_BINDING
   implicit none
-!!  import :: RPN_MPI_Loc                                                       !InTf!
+!!  import :: RPN_MPI_Loc, C_INT                                                      !InTf!
 ! ARGUMENTS
-  integer, intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
+  integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
 !! type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
 ! white lie in published interface, g is published as an address passed by value
-  integer, intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
+  integer(C_INT), intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
   call RPN_MPI_ez_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
  end subroutine RPN_MPI_ez_halo_8                                                !InTf!
 end module RPN_MPI_halo_cache
@@ -384,10 +384,11 @@ end module RPN_MPI_halo_cache
 ! IGNORE
   use RPN_MPI_halo_cache
   implicit none
+!!  import :: C_LONG_LONG, C_INT                                                      !InTf!
 ! ARGUMENTS
-  integer, intent(IN) :: n                                                                  !InTf!
-  integer(kind=8), dimension(n), intent(OUT) :: t                                           !InTf!
-  integer :: nt                                                                             !InTf!
+  integer(C_INT), intent(IN) :: n                                                                  !InTf!
+  integer(C_LONG_LONG), dimension(n), intent(OUT) :: t                                           !InTf!
+  integer(C_INT) :: nt                                                                             !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
@@ -489,11 +490,11 @@ end module RPN_MPI_halo_cache
 ! IGNORE
   use RPN_MPI_halo_cache
   implicit none
-!!  import :: RPN_MPI_Comm                                  !InTf!
+!!  import :: RPN_MPI_Comm, C_INT, C_CHAR                    !InTf!
 ! ARGUMENTS
-!! type(RPN_MPI_Comm), intent(IN) :: row, col               !InTf!
-  integer, intent(IN) :: row, col
-  character(len=1), dimension(*), intent(IN) :: mode        !InTf!
+!! type(RPN_MPI_Comm), intent(IN) :: row, col                !InTf!
+  integer(C_INT), intent(IN) :: row, col
+  character(C_CHAR), dimension(*), intent(IN) :: mode        !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******

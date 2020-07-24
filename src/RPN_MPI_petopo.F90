@@ -252,7 +252,7 @@
       if(pe_me.eq.pe_pe0 .and. diag_mode .ge.2)then
          print *,'PE MATRIX :'
          do j=pe_ny,-1,-1
-	    print 101,(pe_id(i,j),i=-1,pe_nx)
+            print 101,(pe_id(i,j),i=-1,pe_nx)
  101        format(30I4)
          enddo
          print *,'PE_xtab :'
@@ -282,7 +282,7 @@
 !     
       pe_myrow=MPI_COMM_NULL
 !
-      call MPI_COMM_SPLIT(pe_indomm,pe_mey+1,pe_mex+1,pe_myrow,ierr)	     
+      call MPI_COMM_SPLIT(pe_indomm,pe_mey+1,pe_mex+1,pe_myrow,ierr)
 !
       call MPI_COMM_rank(pe_myrow,i,ierr)
       pe_mycol=MPI_COMM_NULL
@@ -312,9 +312,10 @@
       integer, intent(IN) :: x,y,grd,sgrd                          !InTf!
       character (len=*), intent(IN) :: communicator                !InTf!
 
-      integer ordinal
+      integer :: ordinal
 
       RPN_MPI_get_pe = -1
+      ordinal = -1
       if(x >= pe_nx .or. y >= pe_ny .or. x < 0 .or. y < 0)  return    ! bad PE in grid coordinates
       if(grd < -1 .or. grd > pe_tot_multi_grid/pe_tot_grid-1) return  ! bad grid number
       if(sgrd < -1 .or. sgrd > pe_tot_a_domain/pe_tot_multi_grid) &

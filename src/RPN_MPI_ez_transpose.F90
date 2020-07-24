@@ -287,8 +287,7 @@ end subroutine RPN_MPI_print_transpose_times
   integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
 !******
 
-  integer :: n
-  integer :: i, j, k, m, ix, slot
+  integer :: ix, slot, n, m
 
   ierr = MPI_ERROR
   if(npex == 0 .or. row_comm .ne. rowcom .or. nk .ne. gnk) then  ! initialize or reinitialize ?
@@ -368,8 +367,7 @@ end subroutine RPN_MPI_print_transpose_times
   integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
 !******
 
-  integer :: n
-  integer :: i, j, k, m, ix, slot
+  integer :: m, ix, slot, n
 
   ierr = MPI_ERROR
   if(npex == 0 .or. row_comm .ne. rowcom .or. nk .ne. gnk) then  ! initialize or reinitialize ?
@@ -512,8 +510,7 @@ end subroutine RPN_MPI_print_transpose_times
   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 !******
 
-  integer :: n
-  integer :: i, j, k, m, ix, slot
+  integer :: ix, slot
 
   ierr = MPI_ERROR
   if(npey == 0 .or. col_comm .ne. colcom) then   ! update/initialize internal tables if necessary
@@ -541,7 +538,7 @@ end subroutine RPN_MPI_print_transpose_times
   endif
   times(slot,ix) = MPI_Wtime() - times(slot,ix)
 
-1 return
+ return
  end subroutine RPN_MPI_transpose_xy !InTf!
 
 ! version with "rolling wave" alltoall
@@ -560,8 +557,7 @@ end subroutine RPN_MPI_print_transpose_times
   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 
-  integer :: n
-  integer :: i, j, k, m, ix, slot
+  integer :: ix, slot, m
 
   ierr = MPI_ERROR
   if(npey == 0 .or. col_comm .ne. colcom) then   ! update/initialize internal tables if necessary
@@ -594,7 +590,7 @@ end subroutine RPN_MPI_print_transpose_times
   enddo
   times(slot,ix) = MPI_Wtime() - times(slot,ix)
 
-1 return
+  return
  end subroutine RPN_MPI_transpose_xy_s !InTf!
 
 

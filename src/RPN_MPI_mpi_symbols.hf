@@ -28,7 +28,7 @@
   end type
 
   type, BIND(C) :: RPN_MPI_Comm
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Comm
 
   type, BIND(C) :: RPN_MPI_Fcom    ! the Fortran trio, wrapped communicator, size, and rank
@@ -44,39 +44,39 @@
   end type RPN_MPI_csr
 
   type, BIND(C) :: RPN_MPI_Datatype
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Datatype
 
   type, BIND(C) :: RPN_MPI_Errhandler
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Errhandler
 
   type, BIND(C) :: RPN_MPI_File
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_File
 
   type, BIND(C) :: RPN_MPI_Group
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Group
 
   type, BIND(C) :: RPN_MPI_Info
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Info
 
   type, BIND(C) :: RPN_MPI_Message
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Message
 
   type, BIND(C) :: RPN_MPI_Op
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Op
 
   type, BIND(C) :: RPN_MPI_Request
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Request
 
   type, BIND(C) :: RPN_MPI_Win
-    integer :: wrapped_value
+    integer(C_INT) :: wrapped_value
   end type RPN_MPI_Win
 
 !===================================================================

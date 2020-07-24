@@ -38,38 +38,36 @@
       character(len=*)       :: AppID                                !InTf!
       integer, intent(in)    :: Io                                   !InTf!
 !arguments
-!  I	Userinit	User routine that will be called by PE 0 to
-!		get the processor grid topology if it is not supplied
-!		(Pex .eq. 0 ) or (Pey .eq. 0)
-!  O	Pelocal	PE rank (number) of local PE in its GRID
-!  O	Petotal	Number of PEs in this PEs GRID
-!  I/O	Pex	Number of PEs along the X axis. If Pex=0 upon entry
-!		it will be set to the proper value upon exit
-!  I/O	Pey	Number of PEs along the Y axis. If Pey=0 upon entry
-!		it will be set to the proper value upon exit
-!  I    MultiGrids  number of simultaneous MultiGrids (usually 1)
-!  I    Grids   number of grids in MultiGrids
-!  I    AppID   application ID, character string, 5 chars max
-!  I/O  Io      Io mode (there will be mod(io,10) service (IO) PEs per io/10 compute PEs)
-!               Io = 182 : 2 service PEs for 18 compute PEs (2 out of 20 PEs are IO PEs)
+!  I  Userinit  User routine that will be called by PE 0 to
+!               get the processor grid topology if it is not supplied
+!               (Pex .eq. 0 ) or (Pey .eq. 0)
+!  O  Pelocal    PE rank (number) of local PE in its GRID
+!  O  Petotal    Number of PEs in this PEs GRID
+! I/O Pex        Number of PEs along the X axis. If Pex=0 upon entry
+!                it will be set to the proper value upon exit
+! I/O Pey        Number of PEs along the Y axis. If Pey=0 upon entry
+!                it will be set to the proper value upon exit
+!  I  MultiGrids number of simultaneous MultiGrids (usually 1)
+!  I  Grids      number of grids in MultiGrids
+!  I  AppID      application ID, character string, 5 chars max
+! I/O Io         Io mode (there will be mod(io,10) service (IO) PEs per io/10 compute PEs)
+!                Io = 182 : 2 service PEs for 18 compute PEs (2 out of 20 PEs are IO PEs)
 !
 !notes
-!	processor topology common /pe/ will be filled here
-!	positions are calculated from 0 (ORIGIN 0)
-!!
+!      processor topology common /pe/ will be filled here
+!      positions are calculated from 0 (ORIGIN 0)
+!
 !       this is also intended to be a cleanup/refactoring of RPN_MPI_init_multi_level
 !
 #include <RPN_MPI_system_interfaces.hf>
-      integer ierr, i, j, count, npe, reste, nslots, key, status, core
+      integer ierr, i, j, count, reste, status, core
       integer :: pe_type    ! 0 = compute, 1 = service
       integer :: service, compute
       logical mpi_started
-      INTEGER newgroup,rowcomm
-      integer ndom, lndom, nproc, procmax,procmin
       logical ok, allok
       integer RPN_MPI_petopo, RPN_MPI_version
       character *4096 SYSTEM_COMMAND
-      integer ncolors,my_color,iun
+      integer my_color,iun
       integer version_marker, version_max
       integer pe_my_location(10)
 !       external RPN_MPI_unbind_process
@@ -111,8 +109,8 @@
       RPN_MPI_IS_INITIALIZED  =.true.
       RPN_COMM_IS_INITIALIZED =.true.      ! legacy to maintain compatibility with RPN_COMM_init family
       if( .not. WORLD_COMM_MPI_INIT ) then ! world not set before, use MPI_COMM_WORLD
-           WORLD_COMM_MPI_INIT=.true.
-           WORLD_COMM_MPI=MPI_COMM_WORLD
+        WORLD_COMM_MPI_INIT=.true.
+        WORLD_COMM_MPI=MPI_COMM_WORLD
       endif
 !
       call MPI_INITIALIZED(mpi_started,ierr)      ! is the MPI library already initialized ?
@@ -287,20 +285,20 @@ if(pe_me == 0) print *,'application split done'
       call MPI_COMM_RANK(pe_wcomm,pe_me,ierr)                   ! rank
       call MPI_COMM_SIZE(pe_wcomm,pe_tot,ierr)                  ! size
       if(pe_type == 0) then                                     ! compute PEs
-!     	NEW style
-	ml%comm%sgrd%compute = pe_wcomm
-	ml%rank%sgrd%compute = pe_me
-	ml%size%sgrd%compute = pe_tot
-	ml%comm%sgrd%service = MPI_COMM_NULL
-	ml%rank%sgrd%service = -1
-	ml%size%sgrd%service = -1
+!           NEW style
+        ml%comm%sgrd%compute = pe_wcomm
+        ml%rank%sgrd%compute = pe_me
+        ml%size%sgrd%compute = pe_tot
+        ml%comm%sgrd%service = MPI_COMM_NULL
+        ml%rank%sgrd%service = -1
+        ml%size%sgrd%service = -1
       else                                                      ! service PEs
-	ml%comm%sgrd%compute = MPI_COMM_NULL
-	ml%rank%sgrd%compute = -1
-	ml%size%sgrd%compute = -1
-	ml%comm%sgrd%service = pe_wcomm
-	ml%rank%sgrd%service = pe_me
-	ml%size%sgrd%service = pe_tot
+        ml%comm%sgrd%compute = MPI_COMM_NULL
+        ml%rank%sgrd%compute = -1
+        ml%size%sgrd%compute = -1
+        ml%comm%sgrd%service = pe_wcomm
+        ml%rank%sgrd%service = pe_me
+        ml%size%sgrd%service = pe_tot
       endif
 !     OLD style, compute PEs only
       my_colors(2) = my_color                                 ! my multigrid number
@@ -377,20 +375,20 @@ if(pe_me == 0) print *,'application split done'
       call MPI_COMM_RANK(pe_wcomm,pe_me,ierr)                   ! rank
       call MPI_COMM_SIZE(pe_wcomm,pe_tot,ierr)                  ! size
       if(pe_type == 0) then                                     ! compute PEs
-!     	NEW style
-	ml%comm%grid%compute = pe_wcomm
-	ml%rank%grid%compute = pe_me
-	ml%size%grid%compute = pe_tot
-	ml%comm%grid%service = MPI_COMM_NULL
-	ml%rank%grid%service = -1
-	ml%size%grid%service = -1
+!           NEW style
+        ml%comm%grid%compute = pe_wcomm
+        ml%rank%grid%compute = pe_me
+        ml%size%grid%compute = pe_tot
+        ml%comm%grid%service = MPI_COMM_NULL
+        ml%rank%grid%service = -1
+        ml%size%grid%service = -1
       else                                                      ! service PEs
-	ml%comm%grid%compute = MPI_COMM_NULL
-	ml%rank%grid%compute = -1
-	ml%size%grid%compute = -1
-	ml%comm%grid%service = pe_wcomm
-	ml%rank%grid%service = pe_me
-	ml%size%grid%service = pe_tot
+        ml%comm%grid%compute = MPI_COMM_NULL
+        ml%rank%grid%compute = -1
+        ml%size%grid%compute = -1
+        ml%comm%grid%service = pe_wcomm
+        ml%rank%grid%service = pe_me
+        ml%size%grid%service = pe_tot
       endif
 !     OLD style, compute PEs only
       my_colors(3) = my_color                                 ! my grid number in my multigrid
@@ -415,51 +413,51 @@ if(pe_me == 0) print *,'application split done'
 !
       ok = .true.
       if(pe_me .eq. pe_pe0) then
-	  if ( Pex.eq.0 .or. Pey.eq.0  ) then ! get processor topology from Userinit
-	      WORLD_pe(1)=pe_tot
-	      WORLD_pe(2)=1
-	      call Userinit(WORLD_pe(1),WORLD_pe(2))
-	      if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
-		ok = .false.
-		write(rpn_u,*) 'ERROR: (RPN_MPI_init) Inconsistency between'
-		write(rpn_u,*) '       userinit Subroutine and total number of PEs'
-		write(rpn_u,*) '       please double check topology'
-	      endif
-	      if(diag_mode.ge.1) then
-		write(rpn_u,*)'INFO: Requested topology = ',WORLD_pe(1),' by ',WORLD_pe(2)
-		write(rpn_u,*)'      Grid will use ',pe_dommtot,' processes'
-	      endif
-          else ! ( Pex.ne.0 .and. Pey.ne.0  )
-	      write(rpn_u,*) 'INFO: (RPN_MPI_init) Forced topology :',Pex,' by',Pey
-	      WORLD_pe(1) = Pex
-	      WORLD_pe(2) = Pey
-	      if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
-		ok = .false.
-		write(rpn_u,*) 'ERROR: (RPN_MPI_init) Inconsistency between Pex, Pey and total number of PEs'
-		write(rpn_u,*) '       please double check topology'
-	      endif
-	      if(diag_mode.ge.1) then
-		write(rpn_u,*)'Requested topology =',WORLD_pe(1),' by ',WORLD_pe(2)
-	      endif
-	  endif ! ( Pex.eq.0 .or. Pey.eq.0  )
+        if ( Pex.eq.0 .or. Pey.eq.0  ) then ! get processor topology from Userinit
+          WORLD_pe(1)=pe_tot
+          WORLD_pe(2)=1
+          call Userinit(WORLD_pe(1),WORLD_pe(2))
+          if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
+            ok = .false.
+            write(rpn_u,*) 'ERROR: (RPN_MPI_init) Inconsistency between'
+            write(rpn_u,*) '       userinit Subroutine and total number of PEs'
+            write(rpn_u,*) '       please double check topology'
+          endif
+          if(diag_mode.ge.1) then
+            write(rpn_u,*)'INFO: Requested topology = ',WORLD_pe(1),' by ',WORLD_pe(2)
+            write(rpn_u,*)'      Grid will use ',pe_dommtot,' processes'
+          endif
+        else ! ( Pex.ne.0 .and. Pey.ne.0  )
+          write(rpn_u,*) 'INFO: (RPN_MPI_init) Forced topology :',Pex,' by',Pey
+          WORLD_pe(1) = Pex
+          WORLD_pe(2) = Pey
+          if(WORLD_pe(1)*WORLD_pe(2).ne.pe_dommtot) then
+            ok = .false.
+            write(rpn_u,*) 'ERROR: (RPN_MPI_init) Inconsistency between Pex, Pey and total number of PEs'
+            write(rpn_u,*) '       please double check topology'
+          endif
+          if(diag_mode.ge.1) then
+            write(rpn_u,*)'Requested topology =',WORLD_pe(1),' by ',WORLD_pe(2)
+          endif
+        endif ! ( Pex.eq.0 .or. Pey.eq.0  )
 !
-	  if(WORLD_pe(1)*WORLD_pe(2) .gt. pe_dommtot) then
-	    write(rpn_u,*)' ERROR: not enough PEs for requested decomposition '
-	    write(rpn_u,*)'        REQUESTED=',WORLD_pe(1)*WORLD_pe(2)
-	    write(rpn_u,*)'        AVAILABLE=',pe_dommtot
-	    ok = .false.
-	  endif
+        if(WORLD_pe(1)*WORLD_pe(2) .gt. pe_dommtot) then
+          write(rpn_u,*)' ERROR: not enough PEs for requested decomposition '
+          write(rpn_u,*)'        REQUESTED=',WORLD_pe(1)*WORLD_pe(2)
+          write(rpn_u,*)'        AVAILABLE=',pe_dommtot
+          ok = .false.
+        endif
       endif  ! (pe_me .eq. pe_pe0)
 !
       call mpi_allreduce(ok, allok, 1, MPI_LOGICAL, MPI_LAND, WORLD_COMM_MPI, ierr)
       if(.not.allok) then
-           if(.not. ok .and. pe_me .eq. pe_pe0 ) write(rpn_u,*)'ERROR: problem in grid initialization'
-           call RPN_MPI_finalize(ierr)
-           stop
+        if(.not. ok .and. pe_me .eq. pe_pe0 ) write(rpn_u,*)'ERROR: problem in grid initialization'
+        call RPN_MPI_finalize(ierr)
+        stop
       endif
 !
-!	send WORLD topology to all PEs. That will allow all PEs
-!	to compute other PE topology parameters locally.
+!      send WORLD topology to all PEs. That will allow all PEs
+!      to compute other PE topology parameters locally.
 !       for doing this, we need to define some basic domains
 !       communicators.
 
@@ -479,17 +477,17 @@ if(pe_me == 0) print *,'application split done'
       deltaj = WORLD_pe(4)
 !
       if ( Pex.eq.0 .or. Pey.eq.0  ) then ! return processor topology
-	Pex = WORLD_pe(1)
-	Pey = WORLD_pe(2)
+        Pex = WORLD_pe(1)
+        Pey = WORLD_pe(2)
       endif
 !
-!	pe_pe0 is not equal to 0 if there are more than one domain
-!	computational grid
+!      pe_pe0 is not equal to 0 if there are more than one domain
+!      computational grid
 !
       count = pe_pe0
 !
-!	fill tables containing the position along the X axis (pe_xtab)
-!	and along the Y axis (pe_ytab) for all processors
+!      fill tables containing the position along the X axis (pe_xtab)
+!      and along the Y axis (pe_ytab) for all processors
 !     --------------------------------------------------------------------------
 !     PE topology
       ierr = RPN_MPI_petopo(WORLD_pe(1),WORLD_pe(2))
@@ -515,22 +513,21 @@ if(pe_me == 0) print *,'application split done'
 print *,'pe_tot =',pe_tot
 ! diag_mode = 3
       allocate(pe_location(10,0:pe_tot-1))
-      call MPI_allgather( &
-     &     pe_my_location,10,MPI_INTEGER, &
-     &     pe_location,   10,MPI_INTEGER, &
-     &     WORLD_COMM_MPI, ierr)
+      call MPI_allgather( pe_my_location,10,MPI_INTEGER, &
+                          pe_location,   10,MPI_INTEGER, &
+                          WORLD_COMM_MPI, ierr)
       if( pe_me_all_domains .eq. 0 .and. diag_mode .ge.3) then
         write(rpn_u,*)'                         FULL PE MAP'
         write(rpn_u,*)'    mex     mey   me(g)    grid  me(sg)   sgrid   me(d)  application appid     host   numa'
         do j=0,pe_tot_all_domains-1
-           appid5 = '     '
-           reste = pe_location(8,j)
-           do i = 5, 1, -1
-             appid5(i:i) = char(32 + mod(reste,64))
-             reste = reste / 64
-           enddo
-           write(rpn_u,1001)pe_location(1:8,j),appid5,pe_location(9:10,j)
-1001       format(7I8,I12,3X,A5,Z9,I3)
+          appid5 = '     '
+          reste = pe_location(8,j)
+          do i = 5, 1, -1
+            appid5(i:i) = char(32 + mod(reste,64))
+            reste = reste / 64
+          enddo
+          write(rpn_u,1001)pe_location(1:8,j),appid5,pe_location(9:10,j)
+1001      format(7I8,I12,3X,A5,Z9,I3)
         enddo
       endif
       deallocate(pe_location)
@@ -549,7 +546,7 @@ print *,'pe_tot =',pe_tot
       BLOC_corner = pe_pe0
       BLOC_master = 0
       if(pe_me.eq.pe_pe0) then
-         BLOC_master=1
+        BLOC_master=1
       endif
       pe_bloc = pe_indomm
 

@@ -31,29 +31,29 @@ module RPN_MPI_mpi_layout
       -1, -1, &                               ! host, numa node
       [-1, -1, -1], &                         ! colors
       grid_hierarchy( &                       ! communicators
-	application(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL), &
-	application(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL), &
-	mpigrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-	        MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-	        MPI_COMM_NULL, MPI_COMM_NULL), &
-	mpigrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-	        MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
-	        MPI_COMM_NULL, MPI_COMM_NULL), &
-	subgrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL) &
+        application(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL), &
+        application(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL), &
+        mpigrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
+                MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
+                MPI_COMM_NULL, MPI_COMM_NULL), &
+        mpigrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
+                MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL, &
+                MPI_COMM_NULL, MPI_COMM_NULL), &
+        subgrid(MPI_COMM_NULL, MPI_COMM_NULL, MPI_COMM_NULL) &
       ), &
       grid_hierarchy( &                       ! ranks
-	application(-1, -1, -1), &
-	application(-1, -1, -1), &
-	mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
-	mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
-	subgrid(-1, -1, -1) &
+        application(-1, -1, -1), &
+        application(-1, -1, -1), &
+        mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
+        mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
+        subgrid(-1, -1, -1) &
       ), &
       grid_hierarchy( &                       ! sizes
-	application(-1, -1, -1), &
-	application(-1, -1, -1), &
-	mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
-	mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
-	subgrid(-1, -1, -1) &
+        application(-1, -1, -1), &
+        application(-1, -1, -1), &
+        mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
+        mpigrid(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1), &
+        subgrid(-1, -1, -1) &
       ) &
     )
   type(mpi_layout), save, pointer         :: mw => NULL()    ! communicators, ranks, sizes, wrapped
@@ -179,7 +179,6 @@ end module RPN_MPI_mpi_layout
 !!  type(mpi_layout), intent(INOUT) :: what                  !InTf! 
   type(mpi_layout_internal), intent(INOUT) :: what
   integer(C_INT), intent(OUT) :: ierr                       !InTf! 
-  integer :: i
 
   ierr = MPI_ERROR
   if(.not. associated(mw)) call RPN_MPI_init_mpi_layout

@@ -5,8 +5,8 @@
 interface
   !==================================  system functions ==================================
   function get_host_id() result(h) bind(C,name='gethostid')
-    import :: C_LONG
-    integer(C_LONG) :: h
+    import :: C_INT
+    integer(C_INT) :: h
   end function get_host_id
   function numa_node(cpu) result(n) bind(C,name='numa_node_of_cpu')
     import :: C_INT

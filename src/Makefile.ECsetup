@@ -8,8 +8,8 @@ endif
 $(info including Makefile for EC setup)
 # this is for sites using the EC setup
 
-CFLAGS =  -O 2
-FCFLAGS = -O 2
+CFLAGS =  -O 2 $(WC_ALL)
+FCFLAGS = -O 2 $(WF_ALL)
 
 # use Environment Canada tools s.cc, s.f77, s.f90
 CC=s.cc

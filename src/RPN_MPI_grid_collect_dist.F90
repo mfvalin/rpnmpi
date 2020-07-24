@@ -23,11 +23,11 @@
 !! import :: RPN_MPI_Loc, RPN_MPI_Ftopo, C_INT                   !InTf!
   type(RPN_MPI_Ftopo), intent(IN) :: topo                        !InTf!
   integer(C_INT), intent(IN) :: mini,maxi,minj,maxj,gni,gnj      !InTf!
-  integer, intent(OUT) :: ierr                                   !InTf!
+  integer(C_INT), intent(OUT) :: ierr                            !InTf!
 ! white lie in published interface, zloc and zglb are published as addresses passed by value
 !! type(RPN_MPI_Loc), intent(IN), value :: zloc, zglb            !InTf!
-  integer, intent(IN),  dimension(mini:maxi,minj:maxj) :: zloc
-  integer, intent(OUT), dimension(gni,gnj)             :: zglb
+  integer(C_INT), intent(IN),  dimension(mini:maxi,minj:maxj) :: zloc
+  integer(C_INT), intent(OUT), dimension(gni,gnj)             :: zglb
 
   integer :: npex, npey, lni, lnj, nw, i, i0, j, np, lnimax, lnjmax
   integer, dimension(:,:,:), allocatable :: t1
@@ -92,16 +92,18 @@
 !! import :: RPN_MPI_Loc, RPN_MPI_Ftopo, C_INT                   !InTf!
   type(RPN_MPI_Ftopo), intent(IN) :: topo                        !InTf!
   integer(C_INT), intent(IN) :: mini,maxi,minj,maxj,gni,gnj      !InTf!
-  integer, intent(OUT) :: ierr                                   !InTf!
+  integer(C_INT), intent(OUT) :: ierr                            !InTf!
 ! white lie in published interface, zloc and zglb are published as addresses passed by value
 !! type(RPN_MPI_Loc), intent(IN), value :: zloc, zglb            !InTf!
-  integer, intent(OUT), dimension(mini:maxi,minj:maxj) :: zloc
-  integer, intent(IN), dimension(gni,gnj)              :: zglb
+  integer(C_INT), intent(OUT), dimension(mini:maxi,minj:maxj) :: zloc
+  integer(C_INT), intent(IN), dimension(gni,gnj)              :: zglb
 
   ierr = MPI_ERROR
   if(VaL(topo%grd%comm) == MPI_COMM_NULL .or. &
      VaL(topo%row%comm) == MPI_COMM_NULL .or. &
      VaL(topo%col%comm) == MPI_COMM_NULL) return
-
+  !=====================================================================
+  zloc = zglb(1,1)   ! to get rid of warnings until proper code inserted
+  !=====================================================================
   ierr = MPI_SUCCESS
  end subroutine RPN_MPI_grid_dist                                !InTf!
