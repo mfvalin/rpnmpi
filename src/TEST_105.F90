@@ -37,9 +37,12 @@ subroutine rpn_mpi_test_105
   read(argv(4),*,err=777) blky
   read(argv(5),*,err=777) x_first                     ! spread first along x if 1
   read(argv(6),*,err=777) ez                          ! ez test flag (.ne. 0, use ez calls + setup
-  allocate( pe_matrix(0:npex-1,0:npey-1), pe_x(0:npe-1), pe_y(0:npe-1) )
+  allocate( pe_matrix(0:npex-1,0:npey-1) )
   allocate( pe_matrix_ref(0:npex-1,0:npey-1))
+  allocate( pe_x(0:npe-1) )
+  allocate( pe_y(0:npe-1) )
   pe_matrix = -1
+  pe_matrix_ref = pe_matrix
   pe_x      = -1
   pe_y      = -1
 

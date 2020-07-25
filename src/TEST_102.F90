@@ -6,7 +6,7 @@
         common/ndomains/n_domains
         integer ndomains, offset, err
         character (len=128) SYSTEM_COMMAND
-	SYSTEM_COMMAND="1"
+        SYSTEM_COMMAND="1"
         call get_environment_variable("TEST_102",SYSTEM_COMMAND)
         if(SYSTEM_COMMAND == "" )SYSTEM_COMMAND="1"
         read(SYSTEM_COMMAND,*)ndomains
@@ -31,38 +31,30 @@
         integer Pelocal,Petotal
         common /PEs/ Pelocal,Petotal
         integer, allocatable, dimension(:)  ::iarr,jarr
-        integer, allocatable, dimension(:,:,:) ::data,data2,glob
+        integer, allocatable, dimension(:,:,:) ::data,data2
 !
         external sss
         integer npex,npey
         integer min3,max3,ierr, istat
-        integer mini,maxi,nil,nilmax,ni0,i0
+        integer mini,maxi,nil,nilmax,ni0
         integer minj,maxj,njl,njlmax,nj0,j0
-        integer nzl, nzlmzx, nz0,irep,iter,irep2
-        real*8 time1,time2,MPI_wtime,time_min,time_max,time_tot
-        external MPI_wtime
+        integer nzl, nzlmzx, nz0
+        real*8, external :: MPI_wtime
 !
         integer RPN_COMM_topo
-        integer RPN_COMM_init_multi_level, mygrid, mygridcomm, mymultigridcomm,myworldcomm,myallgridcomm
-        integer RPN_COMM_colors
-        integer RPN_COMM_comm
+        integer RPN_COMM_init_multi_level, mygrid
         integer test_grids
-	integer RPN_COMM_option_L
+        integer RPN_COMM_option_L
         external RPN_COMM_mydomain
         external get_n_domains
         external test_grids
-	external RPN_COMM_option_L
-        integer domains, mydomain,irank,isize
-        integer n_domains,j
-        integer peercomm, npeers
+        external RPN_COMM_option_L
+        integer mydomain
+        integer n_domains
         common/ndomains/n_domains
-        character *6 is_async(2)
 
-        integer cache_flush(2000*2000)
         integer, parameter :: NEXCH=256
         real, parameter :: SCAL=1.0/NEXCH
-        real time_ew(0:5*NEXCH), time_ns(0:5*NEXCH)
-        integer nbytes, nodebytes
 !
 !       force a "callback" type initialization
 !
@@ -72,12 +64,12 @@
 !
         call RPN_COMM_set_petopo(1,1000)   ! force vertically striped distribution
         mygrid = RPN_COMM_init_multi_level(sss,Pelocal,Petotal,npex,npey,n_domains/100,mod(n_domains,100))
-!	============= TEST for WORLD/MULTIGRID/GRID ====================
+!        ============= TEST for WORLD/MULTIGRID/GRID ====================
 !
 !         if(test_grids(mygrid,Pelocal) .ne. 0) goto 9999
 !         goto 9999
 !
-!	================= TEST for transpose ===================
+!        ================= TEST for transpose ===================
 !
 !
         istat= RPN_COMM_topo(nptsx,mini,maxi,nil,nilmax,ihalox,ni0,.TRUE.,.FALSE.)
@@ -115,19 +107,19 @@
 !
              call RPN_COMM_transpose(data,mini,maxi,nptsx,(maxj-minj+1),min3,max3,nptsz,data2,1,2)
 !
-             call vfy_xpos(data2,jarr,minj,maxj,njl,nz0,nzl,min3,max3,nptsx,j0)
+             call vfy_xpos(data2,minj,maxj,njl,nz0,nzl,min3,max3,nptsx,j0)
 !
              call RPN_COMM_transpose(data,mini,maxi,nptsx,(maxj-minj+1),min3,max3,nptsz,data2,-1,2)
 !
-             call vfy_arr2(data,iarr,jarr,mini,maxi,minj,maxj,nptsz,nil,njl,ihalox,ihaloy)
+             call vfy_arr2(data,iarr,jarr,mini,maxi,minj,maxj,nptsz,nil,njl)
 !
              call RPN_COMM_transpose(data,mini,maxi,nptsx,(maxj-minj+1),min3,max3,nptsz,data2,1,2)
 !
-             call vfy_xpos(data2,jarr,minj,maxj,njl,nz0,nzl,min3,max3,nptsx,j0)
+             call vfy_xpos(data2,minj,maxj,njl,nz0,nzl,min3,max3,nptsx,j0)
 !
              call RPN_COMM_transpose(data,mini,maxi,nptsx,(maxj-minj+1),min3,max3,nptsz,data2,-1,2)
 !
-             call vfy_arr2(data,iarr,jarr,mini,maxi,minj,maxj,nptsz,nil,njl,ihalox,ihaloy)
+             call vfy_arr2(data,iarr,jarr,mini,maxi,minj,maxj,nptsz,nil,njl)
            endif
 !
 !     THE END !!
@@ -135,12 +127,12 @@
 !
  2222   Continue
         call RPN_COMM_BARRIER('WORLD',ierr)
- 9999	continue
+ 9999   continue
         call RPN_COMM_FINALIZE(ierr)
         stop
         end
 !
-        subroutine vfy_xpos(z,jtab,minj,maxj,njl,nz0,nzl,min3,max3,nptsx,j0)
+        subroutine vfy_xpos(z,minj,maxj,njl,nz0,nzl,min3,max3,nptsx,j0)
 !!!!        use rpn_comm
         implicit none 
         integer Pelocal,Petotal
@@ -151,7 +143,6 @@
 !
         integer minj,maxj,njl,min3,max3,nptsx,nzl,nz0,j0
         integer z(2,minj:maxj,min3:max3,nptsx)
-        integer jtab(minj:maxj)
         integer i,j,k
         integer error
         error=0
@@ -171,7 +162,7 @@
         return
         end
 !
-        subroutine vfy_arr2(z,itab,jtab,minx,maxx,miny,maxy,nk,nil,njl,ihalox,ihaloy)
+        subroutine vfy_arr2(z,itab,jtab,minx,maxx,miny,maxy,nk,nil,njl)
 !!!!        use rpn_comm
         implicit none 
         integer Pelocal,Petotal
@@ -179,7 +170,7 @@
 !
 !        verify array containing markers ignoring k
 !
-        integer minx,maxx,miny,maxy,nk,nil,njl,ihalox,ihaloy
+        integer minx,maxx,miny,maxy,nk,nil,njl
         integer z(2,minx:maxx,miny:maxy,nk)
         integer itab(minx:maxx),jtab(miny:maxy)
         integer i,j,k,k0
@@ -267,7 +258,7 @@
 !
         SUBROUTINE sss(nx,ny)
         implicit none 
-        integer zouf,nx,ny
+        integer nx,ny
 !
 !        "callback routine" used to get initial topology
 !        information
@@ -291,14 +282,14 @@
         return
         end
 !
-	integer function test_grids(mygrid,Pelocal)
-	implicit none
-	integer mygrid, Pelocal
+        integer function test_grids(mygrid,Pelocal)
+        implicit none
+        integer mygrid, Pelocal
 
-	integer RPN_COMM_comm, RPN_COMM_colors
-	external RPN_COMM_comm, RPN_COMM_colors
-	integer mygridcomm, mymultigridcomm,myworldcomm,myallgridcomm,peercomm
-	integer irank, isize, ierr, npeers
+        integer RPN_COMM_comm, RPN_COMM_colors
+        external RPN_COMM_comm, RPN_COMM_colors
+        integer mygridcomm, mymultigridcomm,myworldcomm,myallgridcomm,peercomm
+        integer irank, isize, ierr, npeers
 
         test_grids = -1
         mymultigridcomm = RPN_COMM_comm('MULTIGRID')
@@ -341,5 +332,5 @@
         endif
         call RPN_COMM_BARRIER('WORLD',ierr)
         test_grids = 0
-	return
-	end
+        return
+        end

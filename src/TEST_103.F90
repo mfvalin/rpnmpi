@@ -6,7 +6,8 @@ subroutine rpn_mpi_test_103
   use ISO_C_BINDING
   implicit none
 #include <RPN_MPI.hf>
-#include <RPN_MPI_mpif.hf>     ! interface prototypes for MPI routines
+! interface prototypes for MPI routines
+#include <RPN_MPI_mpif.hf>
 
   type(RPN_MPI_mpi_definitions)     :: d
   type(RPN_MPI_mpi_definitions_raw) :: dr
@@ -20,8 +21,8 @@ subroutine rpn_mpi_test_103
 !   integer :: rowcomm, colcomm
   integer :: ilo, ihi, jlo, jhi
   character(len=128) :: argv1, argv2, argv3, mode
-  logical :: printit, redblack, yfirst, async, barrier
-  real(kind=8) :: t1, t2
+  logical :: printit, yfirst, barrier
+  real(kind=8) :: t1
   real(kind=8), dimension(NXCH) :: txch
 
   call MPI_Init(ier)
@@ -36,6 +37,7 @@ subroutine rpn_mpi_test_103
   read(argv2,*,err=777)NI, NJ, NK, halox, haloy
   mode = 'DEFAULT'
   yfirst = .false.
+  barrier = .false.
   if(stat3 .eq. 0) then
     printit  = argv3(1:1) .eq. 't'  ! print arrays
 !     redblack = argv3(2:2) .eq. 'r'  ! use red/black method
@@ -129,10 +131,10 @@ subroutine rpn_mpi_test_103
     do m = sizey-1, 0, -1
     do l = sizex-1, 0, -1
       if(ranktot .eq. l+m*sizex)then
-	write(6,*)"PE(",rankx,',',ranky,')'
-	do j=NJ+haloy,1-haloy,-1
-	  print 1,z(:,j,1)
-	enddo
+        write(6,*)"PE(",rankx,',',ranky,')'
+        do j=NJ+haloy,1-haloy,-1
+          print 1,z(:,j,1)
+        enddo
       endif
       call MPI_Barrier(d%MPI_COMM_WORLD,ier)
     enddo

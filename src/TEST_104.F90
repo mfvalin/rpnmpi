@@ -16,14 +16,14 @@ subroutine rpn_mpi_test_104
   type(RPN_MPI_mpi_definitions_raw) :: dr
   integer :: i, j, k, n, larg, stat, lni, lnj, lnk, gni, gnj, gnk, npex, npey, ranki, rankj
   integer :: i0, j0, k0, i0y, lniy, lnimaxy, ez
-  character(len=128) :: argv(6), mode
+  character(len=128) :: argv(6)
   integer :: lnimax, lnjmax, lnkmax, errors
   integer(kind=8), dimension(:,:,:), allocatable   :: z, z2        ! original and restored original
-  integer(kind=8), dimension(:), allocatable       :: zgi, zgj     ! full row, full column
+  integer(kind=8), dimension(:), allocatable       :: zgi          ! full row, full column
   integer(kind=8), dimension(:,:,:,:), allocatable :: zt, zy, zty
   integer :: row_comm, col_comm
   integer :: myrow, mycol
-  real(kind=8) :: time1, time2, time3, time4, time5
+  real(kind=8) :: time1, time2, time3, time4
   real(kind=8), external :: MPI_Wtime
 
   call MPI_Init(ier)
@@ -204,5 +204,4 @@ subroutine rpn_mpi_test_104
   write(0,*) 'ERROR in arguments'
   goto 1
 2 format(30I10.9)
-3 format(A,10F10.6)
 end subroutine rpn_mpi_test_104

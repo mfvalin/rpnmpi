@@ -18,7 +18,6 @@ subroutine sub1
   use RPN_MPI_mpi_layout
   implicit none
   type(RPN_MPI_Comm) :: dcomm = RPN_MPI_Comm(12345)
-  type(RPN_MPI_mpi_definitions) :: dummyd
   call RPN_MPI_init_mpi_layout         ! get wrapped structure pointers mw and dw initialized
   mw%comm%wrld%all = dw%MPI_COMM_WORLD
   mw%rank%wrld%all = 1
