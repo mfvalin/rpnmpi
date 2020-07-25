@@ -76,7 +76,7 @@
       character(len=5) :: appid5
 !
       if(RPN_COMM_IS_INITIALIZED .or. RPN_MPI_IS_INITIALIZED) then ! ignore with warning message or abort ?
-        if(ml%rank%grid%all == 0) &
+        if(lr%grid%all%rank == 0) &
           write(rpn_u,*) 'ERROR: RPN_MPI/RPN_COMM already initialized, ABORTING execution'
         call mpi_finalize(ierr)
         stop
@@ -88,8 +88,8 @@
         ApplID = ApplID * 64 + and(63, 32 + ichar(AppID(i:i)))  ! i th character
       enddo
       call RPN_MPI_init_mpi_layout   ! initialize NEW style layout structure
-      call RPN_MPI_get_core_and_numa(core, ml%numa)  ! get numa space for this PE
-      ml%host = get_host_id()   ! get host id for this PE
+      call RPN_MPI_get_core_and_numa(core, lr%numa)  ! get numa space for this PE
+      lr%host = get_host_id()   ! get host id for this PE
       compute = Io / 10         ! number of compute PEs in a PE block (compute + service PEs)
       service = mod(Io, 10)     ! number of service(IO) PEs in a PE block
 !
@@ -125,15 +125,15 @@
       call MPI_COMM_RANK(pe_wcomm,pe_me,ierr)     ! rank in UNIVERSE
       call MPI_COMM_SIZE(pe_wcomm,pe_tot,ierr)    ! size of UNIVERSE
 !     NEW style
-      ml%comm%wrld%all = pe_wcomm
-      ml%rank%wrld%all = pe_me
-      ml%size%wrld%all = pe_tot
-      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, ml%comm%wrld%same_node, ierr) ! same node
-      call MPI_COMM_RANK(ml%comm%wrld%same_node, ml%rank%wrld%same_node, ierr)
-      call MPI_COMM_SIZE(ml%comm%wrld%same_node, ml%size%wrld%same_node, ierr)
-      call MPI_COMM_SPLIT(ml%comm%wrld%same_node, ml%numa, pe_me, ml%comm%wrld%same_numa, ierr)                    ! same numa space
-      call MPI_COMM_RANK(ml%comm%wrld%same_numa, ml%rank%wrld%same_numa, ierr)
-      call MPI_COMM_SIZE(ml%comm%wrld%same_numa, ml%size%wrld%same_numa, ierr)
+      lr%wrld%all%comm = pe_wcomm
+      lr%wrld%all%rank = pe_me
+      lr%wrld%all%size = pe_tot
+      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, lr%wrld%same_node%comm, ierr) ! same node
+      call MPI_COMM_RANK(lr%wrld%same_node%comm, lr%wrld%same_node%rank, ierr)
+      call MPI_COMM_SIZE(lr%wrld%same_node%comm, lr%wrld%same_node%size, ierr)
+      call MPI_COMM_SPLIT(lr%wrld%same_node%comm, lr%numa, pe_me, lr%wrld%same_numa%comm, ierr)                    ! same numa space
+      call MPI_COMM_RANK(lr%wrld%same_numa%comm, lr%wrld%same_numa%rank, ierr)
+      call MPI_COMM_SIZE(lr%wrld%same_numa%comm, lr%wrld%same_numa%size, ierr)
 !     OLD style
       pe_all_domains = pe_wcomm
       pe_me_all_domains = pe_me
@@ -195,16 +195,16 @@
       endif
       RPN_MPI_init = my_color
 !     NEW style
-      ml%comm%appl%all = pe_wcomm
-      ml%rank%appl%all = pe_me
-      ml%size%appl%all = pe_tot
-      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, ml%comm%appl%same_node, ierr) ! same node
-      call MPI_COMM_RANK(ml%comm%appl%same_node, ml%rank%appl%same_node, ierr)
-      call MPI_COMM_SIZE(ml%comm%appl%same_node, ml%size%appl%same_node, ierr)
-      call MPI_COMM_SPLIT(ml%comm%appl%same_node, ml%numa, pe_me, ml%comm%appl%same_numa, ierr)                    ! same numa space
-      call MPI_COMM_RANK(ml%comm%appl%same_numa, ml%rank%appl%same_numa, ierr)
-      call MPI_COMM_SIZE(ml%comm%appl%same_numa, ml%size%appl%same_numa, ierr)
-      ml%colors(1)     = my_color
+      lr%appl%all%comm = pe_wcomm
+      lr%appl%all%rank = pe_me
+      lr%appl%all%size = pe_tot
+      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, lr%appl%same_node%comm, ierr) ! same node
+      call MPI_COMM_RANK(lr%appl%same_node%comm, lr%appl%same_node%rank, ierr)
+      call MPI_COMM_SIZE(lr%appl%same_node%comm, lr%appl%same_node%size, ierr)
+      call MPI_COMM_SPLIT(lr%appl%same_node%comm, lr%numa, pe_me, lr%appl%same_numa%comm, ierr)                    ! same numa space
+      call MPI_COMM_RANK(lr%appl%same_numa%comm, lr%appl%same_numa%rank, ierr)
+      call MPI_COMM_SIZE(lr%appl%same_numa%comm, lr%appl%same_numa%size, ierr)
+      lr%colors(1)     = my_color
 !     OLD style
       my_colors(1) = my_color
       pe_a_domain = pe_wcomm
@@ -218,49 +218,49 @@ if(pe_me == 0) print *,'application split done'
 !     (compute and service PEs at this point)
 !
       my_color = 0
-      pe_wcomm = ml%comm%appl%all
+      pe_wcomm = lr%appl%all%comm
       if(MultiGrids .gt. 1) then
-        my_color=ml%rank%appl%all / (ml%size%appl%all / MultiGrids)
+        my_color=lr%appl%all%rank / (lr%appl%all%size / MultiGrids)
         RPN_MPI_init = my_color
-        call MPI_COMM_SPLIT(ml%comm%appl%all, my_color, ml%rank%appl%all, pe_wcomm, ierr)
+        call MPI_COMM_SPLIT(lr%appl%all%comm, my_color, lr%appl%all%rank, pe_wcomm, ierr)
       endif
       call MPI_COMM_RANK(pe_wcomm,pe_me,ierr)                 ! rank in supergrid
       call MPI_COMM_SIZE(pe_wcomm,pe_tot,ierr)                ! size of supergrid
 !     NEW style
-      ml%comm%sgrd%all = pe_wcomm                             ! supergrid communicator
-      ml%rank%sgrd%all = pe_me                                ! ordinal in supergrid communicator
-      ml%size%sgrd%all = pe_tot                               ! population in supergrid communicator
-      ml%colors(2)     = my_color
-      ml%comm%sgrd%row = MPI_COMM_NULL                        ! row and column are not defined for supergrids
-      ml%rank%sgrd%row = -1
-      ml%size%sgrd%row = -1
-      ml%comm%sgrd%column = MPI_COMM_NULL
-      ml%rank%sgrd%column = -1
-      ml%size%sgrd%column = -1
+      lr%sgrd%all%comm = pe_wcomm                             ! supergrid communicator
+      lr%sgrd%all%rank = pe_me                                ! ordinal in supergrid communicator
+      lr%sgrd%all%size = pe_tot                               ! population in supergrid communicator
+      lr%colors(2)     = my_color
+      lr%sgrd%row%comm = MPI_COMM_NULL                        ! row and column are not defined for supergrids
+      lr%sgrd%row%rank = -1
+      lr%sgrd%row%size = -1
+      lr%sgrd%column%comm = MPI_COMM_NULL
+      lr%sgrd%column%rank = -1
+      lr%sgrd%column%size = -1
 !
 !     supergrid to supergrid peers in application (PEs with same rank in supergrid)
 !
-      call MPI_COMM_SPLIT(ml%comm%appl%all, pe_me, ml%rank%appl%all, ml%comm%sgrd%grid_peer, ierr)  ! supergrid peers
-      call MPI_COMM_RANK(ml%comm%sgrd%grid_peer, ml%rank%sgrd%grid_peer, ierr)
-      call MPI_COMM_SIZE(ml%comm%sgrd%grid_peer, ml%size%sgrd%grid_peer, ierr)
+      call MPI_COMM_SPLIT(lr%appl%all%comm, pe_me, lr%appl%all%rank, lr%sgrd%grid_peer%comm, ierr)  ! supergrid peers
+      call MPI_COMM_RANK(lr%sgrd%grid_peer%comm, lr%sgrd%grid_peer%rank, ierr)
+      call MPI_COMM_SIZE(lr%sgrd%grid_peer%comm, lr%sgrd%grid_peer%size, ierr)
 !
 !     split supergrid communicator into same node and node peers
 !
-      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, ml%comm%sgrd%same_node, ierr)  ! same node
-      call MPI_COMM_RANK(ml%comm%sgrd%same_node, ml%rank%sgrd%same_node, ierr)
-      call MPI_COMM_SIZE(ml%comm%sgrd%same_node, ml%size%sgrd%same_node, ierr)
-      call MPI_COMM_SPLIT(pe_wcomm, ml%rank%sgrd%same_node, ml%rank%sgrd%all, ml%comm%sgrd%node_peer, ierr)         ! node peers
-      call MPI_COMM_RANK(ml%comm%sgrd%node_peer, ml%rank%sgrd%node_peer, ierr)
-      call MPI_COMM_SIZE(ml%comm%sgrd%node_peer, ml%size%sgrd%node_peer, ierr)
+      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, lr%sgrd%same_node%comm, ierr)  ! same node
+      call MPI_COMM_RANK(lr%sgrd%same_node%comm, lr%sgrd%same_node%rank, ierr)
+      call MPI_COMM_SIZE(lr%sgrd%same_node%comm, lr%sgrd%same_node%size, ierr)
+      call MPI_COMM_SPLIT(pe_wcomm, lr%sgrd%same_node%rank, lr%sgrd%all%rank, lr%sgrd%node_peer%comm, ierr)         ! node peers
+      call MPI_COMM_RANK(lr%sgrd%node_peer%comm, lr%sgrd%node_peer%rank, ierr)
+      call MPI_COMM_SIZE(lr%sgrd%node_peer%comm, lr%sgrd%node_peer%size, ierr)
 !
 !     split same node into same NUMA space and supergrid into NUMA space peers
 !
-      call MPI_COMM_SPLIT(ml%comm%sgrd%same_node, ml%numa, pe_me, ml%comm%sgrd%same_numa, ierr)             ! same numa space
-      call MPI_COMM_RANK(ml%comm%sgrd%same_numa, ml%rank%sgrd%same_numa, ierr)
-      call MPI_COMM_SIZE(ml%comm%sgrd%same_numa, ml%size%sgrd%same_numa, ierr)
-      call MPI_COMM_SPLIT(pe_wcomm, ml%rank%sgrd%same_numa, ml%rank%sgrd%all, ml%comm%sgrd%numa_peer, ierr) ! numa peers
-      call MPI_COMM_RANK(ml%comm%sgrd%numa_peer, ml%rank%sgrd%numa_peer, ierr)
-      call MPI_COMM_SIZE(ml%comm%sgrd%numa_peer, ml%size%sgrd%numa_peer, ierr)
+      call MPI_COMM_SPLIT(lr%sgrd%same_node%comm, lr%numa, pe_me, lr%sgrd%same_numa%comm, ierr)             ! same numa space
+      call MPI_COMM_RANK(lr%sgrd%same_numa%comm, lr%sgrd%same_numa%rank, ierr)
+      call MPI_COMM_SIZE(lr%sgrd%same_numa%comm, lr%sgrd%same_numa%size, ierr)
+      call MPI_COMM_SPLIT(pe_wcomm, lr%sgrd%same_numa%rank, lr%sgrd%all%rank, lr%sgrd%numa_peer%comm, ierr) ! numa peers
+      call MPI_COMM_RANK(lr%sgrd%numa_peer%comm, lr%sgrd%numa_peer%rank, ierr)
+      call MPI_COMM_SIZE(lr%sgrd%numa_peer%comm, lr%sgrd%numa_peer%size, ierr)
 !     --------------------------------------------------------------------------
 !     TODO : take care of IO processors  (at the grid level)
 !            "grid" will have to be split into compute and IO processes
@@ -281,24 +281,24 @@ if(pe_me == 0) print *,'application split done'
       if( mod(pe_me,compute+service) < service ) pe_type = 1    ! determine if compute or service PE
 ! print *,'PE type =',pe_type
 !
-      call MPI_COMM_SPLIT(ml%comm%sgrd%all, pe_type, pe_me, pe_wcomm, ierr)
+      call MPI_COMM_SPLIT(lr%sgrd%all%comm, pe_type, pe_me, pe_wcomm, ierr)
       call MPI_COMM_RANK(pe_wcomm,pe_me,ierr)                   ! rank
       call MPI_COMM_SIZE(pe_wcomm,pe_tot,ierr)                  ! size
       if(pe_type == 0) then                                     ! compute PEs
 !           NEW style
-        ml%comm%sgrd%compute = pe_wcomm
-        ml%rank%sgrd%compute = pe_me
-        ml%size%sgrd%compute = pe_tot
-        ml%comm%sgrd%service = MPI_COMM_NULL
-        ml%rank%sgrd%service = -1
-        ml%size%sgrd%service = -1
+        lr%sgrd%compute%comm = pe_wcomm
+        lr%sgrd%compute%rank = pe_me
+        lr%sgrd%compute%size = pe_tot
+        lr%sgrd%service%comm = MPI_COMM_NULL
+        lr%sgrd%service%rank = -1
+        lr%sgrd%service%size = -1
       else                                                      ! service PEs
-        ml%comm%sgrd%compute = MPI_COMM_NULL
-        ml%rank%sgrd%compute = -1
-        ml%size%sgrd%compute = -1
-        ml%comm%sgrd%service = pe_wcomm
-        ml%rank%sgrd%service = pe_me
-        ml%size%sgrd%service = pe_tot
+        lr%sgrd%compute%comm = MPI_COMM_NULL
+        lr%sgrd%compute%rank = -1
+        lr%sgrd%compute%size = -1
+        lr%sgrd%service%comm = pe_wcomm
+        lr%sgrd%service%rank = pe_me
+        lr%sgrd%service%size = pe_tot
       endif
 !     OLD style, compute PEs only
       my_colors(2) = my_color                                 ! my multigrid number
@@ -314,28 +314,28 @@ if(pe_me == 0) print *,'application split done'
 !     (compute and service PEs at this point)
 !
       my_color = 0
-      pe_wcomm = ml%comm%sgrd%all
+      pe_wcomm = lr%sgrd%all%comm
       if(Grids .gt. 1) then
-        my_color=ml%rank%sgrd%all / (ml%size%sgrd%all / Grids)
+        my_color=lr%sgrd%all%rank / (lr%sgrd%all%size / Grids)
         RPN_MPI_init = my_color
-        call MPI_COMM_SPLIT(ml%comm%sgrd%all, my_color, ml%rank%sgrd%all, pe_wcomm, ierr)
+        call MPI_COMM_SPLIT(lr%sgrd%all%comm, my_color, lr%sgrd%all%rank, pe_wcomm, ierr)
       endif
       call MPI_COMM_RANK(pe_wcomm,pe_me,ierr)               ! my rank
       call MPI_COMM_SIZE(pe_wcomm,pe_tot,ierr)              ! size of my subdomain
 !     NEW style
-      ml%comm%grid%all = pe_wcomm
-      ml%rank%grid%all = pe_me
-      ml%size%grid%all = pe_tot
-      ml%colors(3)     = my_color
+      lr%grid%all%comm = pe_wcomm
+      lr%grid%all%rank = pe_me
+      lr%grid%all%size = pe_tot
+      lr%colors(3)     = my_color
 !
 !     grid to grid peers in supergrid (PEs with same rank in grid)
 !
 ! print *,'splitting for grid peers'
-      call MPI_COMM_SPLIT(ml%comm%sgrd%all, pe_me, ml%rank%sgrd%all, ml%comm%grid%grid_peer, ierr)  ! grid peers
-      call MPI_COMM_RANK(ml%comm%grid%grid_peer, ml%rank%grid%grid_peer, ierr)
-      call MPI_COMM_SIZE(ml%comm%grid%grid_peer, ml%size%grid%grid_peer, ierr)
+      call MPI_COMM_SPLIT(lr%sgrd%all%comm, pe_me, lr%sgrd%all%rank, lr%grid%grid_peer%comm, ierr)  ! grid peers
+      call MPI_COMM_RANK(lr%grid%grid_peer%comm, lr%grid%grid_peer%rank, ierr)
+      call MPI_COMM_SIZE(lr%grid%grid_peer%comm, lr%grid%grid_peer%size, ierr)
 !     OLD style
-      pe_grid_peers = ml%comm%grid%grid_peer
+      pe_grid_peers = lr%grid%grid_peer%comm
       call MPI_COMM_SIZE(pe_grid_peers,pe_tot_peer,ierr)  ! This must be equal to the number of grids
       call MPI_COMM_RANK(pe_grid_peers,pe_me_peer,ierr)   ! in a supergrid (or else...)
       call MPI_COMM_GROUP(pe_grid_peers,pe_gr_grid_peers,ierr)
@@ -343,15 +343,15 @@ if(pe_me == 0) print *,'application split done'
 !     split grid into nodes and node peers
 !
 ! print *,'splitting for same node'
-      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, ml%comm%grid%same_node, ierr)  ! same node
-      call MPI_COMM_RANK(ml%comm%grid%same_node, ml%rank%grid%same_node, ierr)
-      call MPI_COMM_SIZE(ml%comm%grid%same_node, ml%size%grid%same_node, ierr)
+      call MPI_COMM_SPLIT_TYPE(pe_wcomm, MPI_COMM_TYPE_SHARED, pe_me, MPI_INFO_NULL, lr%grid%same_node%comm, ierr)  ! same node
+      call MPI_COMM_RANK(lr%grid%same_node%comm, lr%grid%same_node%rank, ierr)
+      call MPI_COMM_SIZE(lr%grid%same_node%comm, lr%grid%same_node%size, ierr)
 ! print *,'splitting for node peers'
-      call MPI_COMM_SPLIT(pe_wcomm, ml%rank%grid%same_node, ml%rank%sgrd%all, ml%comm%grid%node_peer, ierr) ! node peers
-      call MPI_COMM_RANK(ml%comm%grid%node_peer, ml%rank%grid%node_peer, ierr)
-      call MPI_COMM_SIZE(ml%comm%grid%node_peer, ml%size%grid%node_peer, ierr)
+      call MPI_COMM_SPLIT(pe_wcomm, lr%grid%same_node%rank, lr%sgrd%all%rank, lr%grid%node_peer%comm, ierr) ! node peers
+      call MPI_COMM_RANK(lr%grid%node_peer%comm, lr%grid%node_peer%rank, ierr)
+      call MPI_COMM_SIZE(lr%grid%node_peer%comm, lr%grid%node_peer%size, ierr)
 !     OLD style
-      pe_grid_host = ml%comm%grid%same_node
+      pe_grid_host = lr%grid%same_node%comm
       call MPI_COMM_RANK(pe_grid_host,pe_me_grid_host,ierr)    ! my rank on this host
       call MPI_COMM_SIZE(pe_grid_host,pe_tot_grid_host,ierr)   ! population of this host
       call MPI_COMM_GROUP(pe_grid_host,pe_gr_grid_host,ierr)   ! group communicator
@@ -359,36 +359,36 @@ if(pe_me == 0) print *,'application split done'
 !     split grid into NUMA spaces and NUMA peers
 !
 ! print *,'splitting for same numa'
-      call MPI_COMM_SPLIT(ml%comm%grid%same_node, ml%numa, pe_me, ml%comm%grid%same_numa, ierr)                     ! same numa
-      call MPI_COMM_RANK(ml%comm%grid%same_numa, ml%rank%grid%same_numa, ierr)
-      call MPI_COMM_SIZE(ml%comm%grid%same_numa, ml%size%grid%same_numa, ierr)
+      call MPI_COMM_SPLIT(lr%grid%same_node%comm, lr%numa, pe_me, lr%grid%same_numa%comm, ierr)                     ! same numa
+      call MPI_COMM_RANK(lr%grid%same_numa%comm, lr%grid%same_numa%rank, ierr)
+      call MPI_COMM_SIZE(lr%grid%same_numa%comm, lr%grid%same_numa%size, ierr)
 ! print *,'splitting for numa peers'
-      call MPI_COMM_SPLIT(ml%comm%grid%all, ml%rank%grid%same_numa, ml%rank%grid%all, ml%comm%grid%numa_peer, ierr) ! numa peers
-      call MPI_COMM_RANK(ml%comm%grid%numa_peer, ml%rank%grid%numa_peer, ierr)
-      call MPI_COMM_SIZE(ml%comm%grid%numa_peer, ml%size%grid%numa_peer, ierr)
+      call MPI_COMM_SPLIT(lr%grid%all%comm, lr%grid%same_numa%rank, lr%grid%all%rank, lr%grid%numa_peer%comm, ierr) ! numa peers
+      call MPI_COMM_RANK(lr%grid%numa_peer%comm, lr%grid%numa_peer%rank, ierr)
+      call MPI_COMM_SIZE(lr%grid%numa_peer%comm, lr%grid%numa_peer%size, ierr)
 !
 !     split grid into compute and service (IO) PEs
 !
 !     pe_type already set above when dealing with supergrids
 ! print *,'splitting for service'
-      call MPI_COMM_SPLIT(ml%comm%grid%all, pe_type, pe_me, pe_wcomm, ierr)
+      call MPI_COMM_SPLIT(lr%grid%all%comm, pe_type, pe_me, pe_wcomm, ierr)
       call MPI_COMM_RANK(pe_wcomm,pe_me,ierr)                   ! rank
       call MPI_COMM_SIZE(pe_wcomm,pe_tot,ierr)                  ! size
       if(pe_type == 0) then                                     ! compute PEs
 !           NEW style
-        ml%comm%grid%compute = pe_wcomm
-        ml%rank%grid%compute = pe_me
-        ml%size%grid%compute = pe_tot
-        ml%comm%grid%service = MPI_COMM_NULL
-        ml%rank%grid%service = -1
-        ml%size%grid%service = -1
+        lr%grid%compute%comm = pe_wcomm
+        lr%grid%compute%rank = pe_me
+        lr%grid%compute%size = pe_tot
+        lr%grid%service%comm = MPI_COMM_NULL
+        lr%grid%service%rank = -1
+        lr%grid%service%size = -1
       else                                                      ! service PEs
-        ml%comm%grid%compute = MPI_COMM_NULL
-        ml%rank%grid%compute = -1
-        ml%size%grid%compute = -1
-        ml%comm%grid%service = pe_wcomm
-        ml%rank%grid%service = pe_me
-        ml%size%grid%service = pe_tot
+        lr%grid%compute%comm = MPI_COMM_NULL
+        lr%grid%compute%rank = -1
+        lr%grid%compute%size = -1
+        lr%grid%service%comm = pe_wcomm
+        lr%grid%service%rank = pe_me
+        lr%grid%service%size = pe_tot
       endif
 !     OLD style, compute PEs only
       my_colors(3) = my_color                                 ! my grid number in my multigrid
@@ -491,12 +491,12 @@ if(pe_me == 0) print *,'application split done'
 !     --------------------------------------------------------------------------
 !     PE topology
       ierr = RPN_MPI_petopo(WORLD_pe(1),WORLD_pe(2))
-      ml%comm%grid%row    = pe_myrow
-      call MPI_COMM_RANK(ml%comm%grid%compute, ml%rank%grid%row, ierr)
-      call MPI_COMM_SIZE(ml%comm%grid%compute, ml%size%grid%row, ierr)
-      ml%comm%grid%column = pe_mycol
-      call MPI_COMM_RANK(ml%comm%grid%compute, ml%rank%grid%column, ierr)
-      call MPI_COMM_SIZE(ml%comm%grid%compute, ml%size%grid%column, ierr)
+      lr%grid%row%comm    = pe_myrow
+      call MPI_COMM_RANK(lr%grid%compute%comm, lr%grid%row%rank, ierr)
+      call MPI_COMM_SIZE(lr%grid%compute%comm, lr%grid%row%size, ierr)
+      lr%grid%column%comm = pe_mycol
+      call MPI_COMM_RANK(lr%grid%compute%comm, lr%grid%column%rank, ierr)
+      call MPI_COMM_SIZE(lr%grid%compute%comm, lr%grid%column%size, ierr)
 
       pe_my_location(1) = pe_mex
       pe_my_location(2) = pe_mey
@@ -506,10 +506,10 @@ if(pe_me == 0) print *,'application split done'
       pe_my_location(6) = my_colors(2)
       pe_my_location(7) = pe_me_a_domain
       pe_my_location(8) = my_colors(1)
-      pe_my_location(9) = ml%host
-      pe_my_location(10)= ml%numa
+      pe_my_location(9) = lr%host
+      pe_my_location(10)= lr%numa
 
-      pe_tot = ml%size%wrld%all
+      pe_tot = lr%wrld%all%size
 print *,'pe_tot =',pe_tot
 ! diag_mode = 3
       allocate(pe_location(10,0:pe_tot-1))

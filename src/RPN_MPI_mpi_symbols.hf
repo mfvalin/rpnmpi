@@ -90,7 +90,7 @@
 ! as the names inside may change WITHOUT WARNING in a newer release
 ! TYPES
   type, BIND(C) :: RPN_MPI_Loc     ! wrapped generic array address
-    integer(C_INTPTR_T) :: a
+    integer(C_INTPTR_T) :: p
   end type
 
   type, BIND(C) :: RPN_MPI_Fcom    ! the Fortran trio, wrapped communicator, size, and rank

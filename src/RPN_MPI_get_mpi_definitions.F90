@@ -25,9 +25,9 @@ module RPN_MPI_mpi_layout
 #include <RPN_MPI_mpi_layout.hf>
 #include <RPN_MPI_nulls.hf>
 
-  ! layouts lr and lw are statically initialized
-  type(mpi_layout_r), save :: lr = mpi_layout_r_NULL
-  type(mpi_layout_f), save :: lw = mpi_layout_f_NULL  ! wrapped version
+  ! lr is statically initialized, lw will be initialized by RPN_MPI_init_mpi_layout
+  type(mpi_layout_r), save, target  :: lr = mpi_layout_r_NULL
+  type(mpi_layout_f), save, pointer :: lw => NULL()  ! wrapped version
 
   ! ml is statically initialized, mw will be initialized by RPN_MPI_init_mpi_layout
   type(mpi_layout_internal), save, target :: ml = &    ! RPN_MPI communicators, ranks, sizes
@@ -104,6 +104,15 @@ contains
     cpu = sched_get_my_cpu()             ! get logical core number
     ml%numa = numa_node(cpu)             ! get numa space number for this core
 
+    if(lr%host == -1) then               ! hostid not initialized
+!     lr%version = layout_version
+      lr%host = get_host_id()            ! get linux host id
+      cpu = sched_get_my_cpu()           ! get logical core number
+      lr%numa = numa_node(cpu)           ! get numa space number for this core
+    endif
+    p = C_LOC(lr)                                     ! layout
+    if(.not. associated(lw)) call C_F_POINTER(p, lw)  ! point to "raw" version
+
     p = C_LOC(ml)                                     ! layout
     if(.not. associated(mw)) call C_F_POINTER(p, mw)  ! point to "raw" version
     return
@@ -158,23 +167,51 @@ end module RPN_MPI_mpi_layout
   return
  end subroutine RPN_MPI_get_mpi_definitions                  !InTf! 
 
-! same as RPN_MPI_get_mpi_layout but advertized with type mpi_layout_internal rather than mpi_layout
+! RPN_MPI_get_mpi_layout_raw : same as RPN_MPI_get_mpi_layout 
+! but advertized with type mpi_layout_internal rather than mpi_layout
+!
 ! get a copy of RPN_MPI internal mpi layout (communicators, ranks, sizes)
 !
 ! RPN_MPI_get_mpi_layout_raw gets a copy of the "not wrapped, raw" information (communicators)
 ! RPN_MPI_get_mpi_layout     gets a copy of the "wrapped" information, useful for interface enforcement
- subroutine RPN_MPI_get_mpi_layout_raw(what, ierr)            !InTf! 
+!
+!! end interface                                             !InTf!
+!! interface RPN_MPI_get_mpi_layout_raw                      !InTf! 
+!
+! OLD layout
+!
+ subroutine RPN_MPI_get_mpi_layout_raw1(what, ierr)          !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
-!!  import :: mpi_layout_internal, C_INT                      !InTf! 
+!!  import :: mpi_layout_internal, C_INT                     !InTf! 
   type(mpi_layout_internal), intent(INOUT) :: what           !InTf! 
   integer(C_INT), intent(OUT) :: ierr                        !InTf! 
-  call RPN_MPI_get_mpi_layout(what, ierr)
+  call RPN_MPI_get_mpi_layout1(what, ierr)
   return
- end subroutine RPN_MPI_get_mpi_layout_raw                    !InTf! 
+ end subroutine RPN_MPI_get_mpi_layout_raw1                  !InTf! 
+!
+! NEW layout
+!
+ subroutine RPN_MPI_get_mpi_layout_raw2(what, ierr)          !InTf! 
+  use RPN_MPI_mpi_layout
+  implicit none
+!!  import :: mpi_layout_r, C_INT                            !InTf! 
+  type(mpi_layout_r), intent(INOUT) :: what                  !InTf! 
+  integer(C_INT), intent(OUT) :: ierr                        !InTf! 
+  call RPN_MPI_get_mpi_layout2(what, ierr)
+  return
+ end subroutine RPN_MPI_get_mpi_layout_raw2                  !InTf! 
+!! end interface                                             !InTf!
+!! interface                                                 !InTf!
 
 ! get a copy of RPN_MPI internal mpi layout (communicators, ranks, sizes)
- subroutine RPN_MPI_get_mpi_layout(what, ierr)               !InTf! 
+!
+!! end interface                                             !InTf!
+!! interface RPN_MPI_get_mpi_layout                          !InTf! 
+!
+! OLD layout
+!
+ subroutine RPN_MPI_get_mpi_layout1(what, ierr)              !InTf! 
   use RPN_MPI_mpi_layout
   implicit none
 !!  import :: mpi_layout, C_INT                              !InTf! 
@@ -183,7 +220,7 @@ end module RPN_MPI_mpi_layout
 ! but it is advertized to the user as "wrapped"
 !!  type(mpi_layout), intent(INOUT) :: what                  !InTf! 
   type(mpi_layout_internal), intent(INOUT) :: what
-  integer(C_INT), intent(OUT) :: ierr                       !InTf! 
+  integer(C_INT), intent(OUT) :: ierr                        !InTf! 
 
   ierr = MPI_ERROR
   if(.not. associated(mw)) call RPN_MPI_init_mpi_layout
@@ -203,4 +240,41 @@ end module RPN_MPI_mpi_layout
   what%rank%sgrd%column    = -1
   what%size%sgrd%column    = -1
   return
- end subroutine RPN_MPI_get_mpi_layout                       !InTf! 
+ end subroutine RPN_MPI_get_mpi_layout1                      !InTf! 
+!
+! NEW layout
+!
+ subroutine RPN_MPI_get_mpi_layout2(what, ierr)              !InTf! 
+  use RPN_MPI_mpi_layout
+  implicit none
+!!  import :: mpi_layout_f, C_INT                            !InTf! 
+! white lie in published interface, 
+! "what" is treated as the "internal" type rather than the "wrapped" type
+! but it is advertized to the user as "wrapped"
+!!  type(mpi_layout_f), intent(INOUT) :: what                !InTf! 
+  type(mpi_layout_r), intent(INOUT) :: what
+  integer(C_INT), intent(OUT) :: ierr                        !InTf! 
+
+  ierr = MPI_ERROR
+  if(.not. associated(mw)) call RPN_MPI_init_mpi_layout
+
+  if(what%version .ne. layout_version) then
+    write(0,*)'ERROR: (RPN_MPI_get_mpi_layout) version mismatch, expected :',layout_version,' got :',what%version
+    what%version = -1
+    return
+  endif
+  ierr = MPI_SUCCESS
+
+  what = lr
+  what%sgrd%row%comm       = MPI_COMM_NULL   ! row is not defined for supergrids
+  what%sgrd%row%rank       = -1
+  what%sgrd%row%size       = -1
+  what%sgrd%column%comm    = MPI_COMM_NULL   ! and neither is column
+  what%sgrd%column%rank    = -1
+  what%sgrd%column%size    = -1
+  return
+ end subroutine RPN_MPI_get_mpi_layout2                      !InTf! 
+!! end interface                                             !InTf!
+!! interface                                                 !InTf!
+
+
