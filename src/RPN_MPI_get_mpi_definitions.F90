@@ -23,6 +23,11 @@ module RPN_MPI_mpi_layout
   implicit none
 #include <RPN_MPI_mpi_symbols.hf>
 #include <RPN_MPI_mpi_layout.hf>
+#include <RPN_MPI_nulls.hf>
+
+  ! layouts lr and lw are statically initialized
+  type(mpi_layout_r), save :: lr = mpi_layout_r_NULL
+  type(mpi_layout_f), save :: lw = mpi_layout_f_NULL  ! wrapped version
 
   ! ml is statically initialized, mw will be initialized by RPN_MPI_init_mpi_layout
   type(mpi_layout_internal), save, target :: ml = &    ! RPN_MPI communicators, ranks, sizes
@@ -58,7 +63,7 @@ module RPN_MPI_mpi_layout
     )
   type(mpi_layout), save, pointer         :: mw => NULL()    ! communicators, ranks, sizes, wrapped
 
-  ! MPI constants, dr is statically initialized, dw is initialized by RPN_MPI_init_mpi_layout
+  ! MPI constants, dr is statically initialized, dw will be initialized by RPN_MPI_init_mpi_layout
   type(RPN_MPI_mpi_definitions_raw), save, target :: dr    = RPN_MPI_mpi_definitions_raw( &
     mpi_symbols_version, &
     MPI_GROUP_NULL, MPI_REQUEST_NULL,MPI_ERRHANDLER_NULL, MPI_INFO_NULL,  MPI_WIN_NULL, &
