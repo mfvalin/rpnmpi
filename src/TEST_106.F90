@@ -23,7 +23,7 @@ subroutine rpn_mpi_test_106
 #include <RPN_MPI.hf>
   integer :: ier, npe, rank, larg
   type(RPN_MPI_mpi_definitions_raw) :: dr
-  integer :: i, ln, side, stat, npex, npey
+  integer :: i, ln, side, stat, npex, npey, myside, siderank
   character(len=128) :: argv(6)
 
   call MPI_Init(ier)
@@ -42,9 +42,12 @@ subroutine rpn_mpi_test_106
   read(argv(1),*,err=777) npex                        ! PE topology (npex, npey)
   read(argv(2),*,err=777) npey
   read(argv(3),*,err=777) ln                          ! edge length
+  myside = rank / (npex * npey)
+  siderank = rank - myside * npex * npey
+  write(6,*) 'myside =',myside,', siderank =',siderank
 
-  if(npex*npey*6 .ne. npe .and. npe .ne. 1) goto 777  ! npex x npey PEs per side, 6 sides, if a cube
-  if(ln < 4) goto 777
+  if(npex*npey*6 .ne. npe .and. npe .ne. 1) goto 888  ! npex x npey PEs per side, 6 sides, if a cube
+  if(ln < 4) goto 888
 
   write(fmtx,1) '(A,',ln,'F7.3,A,F7.3,A,F7.3)'
   write(fmty,1) '(A,F7.3,A,',ln,'F7.3,A,F7.3)'
@@ -54,7 +57,7 @@ subroutine rpn_mpi_test_106
       call test_edges(side, ln)
     enddo
   else
-    if(npe == 6) call test_edges(rank, ln)
+    if(siderank == 0) call test_edges(myside, ln)
   endif
 
 7 continue
@@ -62,7 +65,11 @@ subroutine rpn_mpi_test_106
   stop
 
 777 continue
-  write(0,*) 'ERROR in arguments'
+  write(6,*) 'MISSING or ill formatted arguments'
+  goto 7
+
+888 continue
+  write(6,*) 'WRONG values in arguments'
   goto 7
 
 1 format(A,I0,A)
