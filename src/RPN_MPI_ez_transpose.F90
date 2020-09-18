@@ -21,7 +21,7 @@
 ! DESCRIPTION
 ! simplified/restricted version of MPI transpose package
 !
-! layout for GEM solver with FFTW (array shapes)
+! proposed layout for GEM solver with FFTW (array shapes)
 !
 !
 !                         ===  with xz and xy transposes  ===
@@ -78,7 +78,7 @@
 !                                            v
 !                     ripple distributed tridiagonal solver along j
 !
-! example of usage
+! example of usage (code taken from TEST_104.F90 in rpn_mpi package)
 !
 ! #include 'RPN_MPI.hf'
 !
@@ -89,17 +89,13 @@
 ! 
 !   call RPN_MPI_transpose_setup(gnk, lnk, row_comm, col_comm, ier)
 !
-!   call RPN_MPI_transpose_xz(LoC(z), LoC(zt), &
-! 			    .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
+!   call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
 !
-!   call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), &
-! 			    .true., lnimax*2, lnjmax, lnk, ier)
+!   call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
 !
-!   call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), &
-! 			    .false., lnimaxy*2, lnjmax, lnk, col_comm, ier)
+!   call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .false., lnimaxy*2, lnjmax, lnk, col_comm, ier)
 !
-!   call RPN_MPI_ez_transpose_xz(LoC(z2), LoC(zt), &
-! 			    .false., lnimax*2, lnjmax, lnk, ier)
+!   call RPN_MPI_ez_transpose_xz(LoC(z2), LoC(zt), .false., lnimax*2, lnjmax, lnk, ier)
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
@@ -121,8 +117,8 @@ module RPN_MPI_transpose_mod
   integer, save :: moxz = 1                                       ! default modulo for staggered alltoall is 1
   integer, save :: moxy = 1                                       ! default modulo for staggered alltoall is 1
   integer, parameter :: MAXTMG = 8
-  real(kind=8), dimension(4,MAXTMG), save :: times
-  integer, dimension(4), save :: counts = [0, 0, 0, 0]
+  real(kind=8), dimension(4,MAXTMG), save :: times                ! collect timings for last MAXTMG to fwd/inverse xz and xy transposes
+  integer, dimension(4), save :: counts = [0, 0, 0, 0]            ! counters for fwd/inverse xz and xy transposes
  contains
   subroutine RPN_MPI_transpose_alloc(m)
     implicit none
@@ -138,7 +134,7 @@ module RPN_MPI_transpose_mod
   end subroutine RPN_MPI_transpose_alloc
 end module RPN_MPI_transpose_mod
 
-subroutine RPN_MPI_print_transpose_times
+subroutine RPN_MPI_print_transpose_times ! print collected transpose timings 
   use ISO_C_BINDING
   use RPN_MPI_transpose_mod
   implicit none
@@ -202,7 +198,7 @@ end subroutine RPN_MPI_print_transpose_times
 
 !****f* rpn_mpi/RPN_MPI_ez_transpose_xz
 ! DESCRIPTION
-! ezversion of xz transpose
+! ezversion of xz transpose (row communicator is implicit)
 ! see RPN_MPI_transpose_xz for detailed description of arguments
 !
 ! SEE ALSO
@@ -217,7 +213,7 @@ end subroutine RPN_MPI_print_transpose_times
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
-!! ! RPN_MPI_Loc is essentially the address of some array
+!! ! RPN_MPI_Loc is essentially the wrapped address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lnix, lnjy, lnkx                       !InTf!
@@ -275,7 +271,7 @@ end subroutine RPN_MPI_print_transpose_times
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
-!! ! RPN_MPI_Loc is essentially the address of some array
+!! ! RPN_MPI_Loc is essentially the wrapped address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lnix, lnjy, gnk, lnkx                  !InTf!
@@ -355,7 +351,7 @@ end subroutine RPN_MPI_print_transpose_times
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
-!! ! RPN_MPI_Loc is essentially the address of some array
+!! ! RPN_MPI_Loc is essentially the wrapped address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lnix, lnjy, gnk, lnkx                  !InTf!
@@ -422,7 +418,7 @@ end subroutine RPN_MPI_print_transpose_times
 
 !****f* rpn_mpi/RPN_MPI_ez_transpose_xy
 ! DESCRIPTION
-! ez version of xy transpose
+! ez version of xy transpose (column communicator is implicit)
 !
 !  see RPN_MPI_transpose_xy for detailed description of arguments
 ! AUTHOR
@@ -437,7 +433,7 @@ end subroutine RPN_MPI_print_transpose_times
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
-!! ! RPN_MPI_Loc is essentially the address of some array
+!! ! RPN_MPI_Loc is essentially the wrapped address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!
@@ -498,7 +494,7 @@ end subroutine RPN_MPI_print_transpose_times
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
-!! ! RPN_MPI_Loc is essentially the address of some array
+!! ! RPN_MPI_Loc is essentially the wrapped address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!
@@ -547,7 +543,7 @@ end subroutine RPN_MPI_print_transpose_times
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
-!! ! RPN_MPI_Loc is essentially the address of some array
+!! ! RPN_MPI_Loc is essentially the wrapped address of some array
 !! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!

@@ -31,19 +31,19 @@ subroutine rpn_mpi_test_104
   call RPN_MPI_get_mpi_definitions_raw(dr, ier)       ! get "raw" definitions
 
   call MPI_Comm_size(dr%MPI_COMM_WORLD, npe, ier)     ! get world size
-  call MPI_Comm_rank(dr%MPI_COMM_WORLD, rank, ier)    ! get world rank
+  call MPI_Comm_rank(dr%MPI_COMM_WORLD, rank, ier)    ! get rank in world
 
   do i=1,6
-    call get_command_argument(i,argv(i),larg,stat)    ! get 5 program arguments
+    call get_command_argument(i,argv(i),larg,stat)    ! get the 6 program arguments
     if(stat .ne. 0) goto 777
   enddo
   write(0,*) 'I am PE',rank+1,' of',npe
-  read(argv(1),*,err=777) gni                         ! global grid (gni, gnj, gnk)
+  read(argv(1),*,err=777) gni                         ! global grid size (gni, gnj, gnk)
   read(argv(2),*,err=777) gnj
   read(argv(3),*,err=777) gnk
   read(argv(4),*,err=777) npex                        ! PE topology (npex, npey)
   read(argv(5),*,err=777) npey
-  read(argv(6),*,err=777) ez                          ! ez test flag (.ne. 0, use ez calls + setup
+  read(argv(6),*,err=777) ez                          ! ez test flag (if .ne. 0, use ez calls + setup)
   if(npex*npey .ne. npe) then
     write(0,*) 'got',npe,' PEs, expected',npex*npey
     goto 777
@@ -51,10 +51,10 @@ subroutine rpn_mpi_test_104
 
   ranki = mod(rank,npex)
   mycol = ranki
-  call MPI_Comm_split(dr%MPI_COMM_WORLD, mycol, rank, col_comm, ier)  ! column communicator
+  call MPI_Comm_split(dr%MPI_COMM_WORLD, mycol, rank, col_comm, ier)  ! create column communicator
   rankj = rank / npex
   myrow = rankj
-  call MPI_Comm_split(dr%MPI_COMM_WORLD, myrow, rank, row_comm, ier)  ! row communicator
+  call MPI_Comm_split(dr%MPI_COMM_WORLD, myrow, rank, row_comm, ier)  ! create row communicator
 
   lnimax = (gni + npex -1) / npex      ! gni distributed over x
   i0 = lnimax * ranki
@@ -80,13 +80,13 @@ subroutine rpn_mpi_test_104
   write(0,*) 'ranki, rankj, lnimax, lnimaxy =',ranki, rankj, lnimax, lnimaxy
 
   allocate( z(lnimax,lnjmax,gnk))                 ! original array
-  allocate(z2(lnimax,lnjmax,gnk))                 ! restored original array
+  allocate(z2(lnimax,lnjmax,gnk))                 ! restored original array after the 4 transposes
   allocate(zt(lnimax,lnjmax,max(1,lnk),npex))     ! after x transpose
-  allocate( zgi(lnimax*npex))                     ! a full row, used to reshape zt into zy, and zy into zt
+  allocate(zgi(lnimax*npex))                      ! a full row, used to reshape zt into zy, and zy into zt
   allocate( zy(lnimaxy,lnjmax,max(1,lnk),npey))   ! before y transpose, after inverse y transpose
   allocate(zty(lnimaxy,lnjmax,max(1,lnk),npey))   ! after y transpose
 
-  do k = 1, gnk                                   ! fill with 'tag' values iiijjjkkk
+  do k = 1, gnk                                   ! fill original array with 'tag' values iiijjjkkk
   do j = 1, lnj
   do i = 1, lni
     z(i,j,k) = (i0+i)*1000000 + (j0+j)*1000 + k
@@ -100,23 +100,28 @@ subroutine rpn_mpi_test_104
 ! conditional ez transpose setup call
 !
   if(ez .ne. 0) call RPN_MPI_transpose_setup(gnk, lnk, row_comm, col_comm, ier)
-!   if(ez .eq. 0) call RPN_MPI_transpose_setup(gnk, lnk, row_comm, col_comm, ier)
 !
 ! fwd x, fwd y, inverse y, inverse x transposes (lni values are doubled because z is integer*8)
 !
+! NOTE :
+! the LoC macro (sawtooth case name) is used to get the address of an array
+! it converts loc(some_array) into a type(RPN_MPI_Loc) (wrapped C_INTPTR_T)
+!
   time1 = MPI_Wtime()
-  if(ez .eq. 0) call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
-  if(ez .eq. 0) call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
-  if(ez .eq. 0) call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
-  if(ez .eq. 0) call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
-! use ez call if setup has been performed by RPN_MPI_transpose_setup
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
+  if(ez .eq. 0) then
+    call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
+    call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
+    call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
+    call RPN_MPI_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
+  else ! use the ez call if setup has been performed by RPN_MPI_transpose_setup
+    call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
+    call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
+    call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
+    call RPN_MPI_ez_transpose_xz(LoC(z), LoC(zt), .true., lnimax*2, lnjmax, lnk, ier)
+  endif
   time1 = MPI_Wtime() - time1
 
-! reshape (lnix,lnjy,lnkx,npex) -> (lniy,lnjy,lnkx,npey)
+! reshape (lnix,lnjy,lnkx,npex) -> (lniy,lnjy,lnkx,npey) for forward and inverse transposes along y
   do k = 1,lnk
   do j = 1,lnjmax
     do n = 0,npex-1    ! (1:lnix,i,j,1:npex) -> (gni)
@@ -133,19 +138,21 @@ subroutine rpn_mpi_test_104
   enddo
 
   time2 = MPI_Wtime()
-  if(ez .eq. 0) call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
-  if(ez .eq. 0) call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
-  if(ez .eq. 0) call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
-  if(ez .eq. 0) call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
-! use ez call if setup has been performed by RPN_MPI_transpose_setup
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
-  if(ez .ne. 0) call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
+  if(ez .eq. 0) then
+    call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
+    call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
+    call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
+    call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, col_comm, ier)
+  else ! use the ez call if setup has been performed by RPN_MPI_transpose_setup
+    call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
+    call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
+    call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
+    call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .true.,  lnimaxy*2, lnjmax, lnk, ier)
+  endif
   time2 = MPI_Wtime() - time2
   zy = 0
-!   call RPN_MPI_transpose_xy(LoC(zy), LoC(zty), .false., lnimaxy*2, lnjmax, lnk, col_comm, ier)
-! use ez call because previous RPN_MPI_transpose_xy has performed initialization
+!
+! we can use the ez call because the previous RPN_MPI_transpose_xy has performed the required initialization
   time3 = MPI_Wtime()
   call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .false., lnimaxy*2, lnjmax, lnk, ier)
   call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .false., lnimaxy*2, lnjmax, lnk, ier)
@@ -153,7 +160,7 @@ subroutine rpn_mpi_test_104
   call RPN_MPI_ez_transpose_xy(LoC(zy), LoC(zty), .false., lnimaxy*2, lnjmax, lnk, ier)
   time3 = MPI_Wtime() - time3
 
-! reshape (lniy,lnjy,lnkx,npey) -> (lnix,lnjy,lnkx,npex)
+! reshape (lniy,lnjy,lnkx,npey) -> (lnix,lnjy,lnkx,npex) for inverse transpose along x
   do k = 1,lnk
   do j = 1,lnjmax
     do n = 0,npey-1    ! (1:lniy,j,k,1:npey) -> (gni)
@@ -170,8 +177,8 @@ subroutine rpn_mpi_test_104
   enddo
 
   z2 = 0
-!   call RPN_MPI_transpose_xz(LoC(z2), LoC(zt), .false., lnimax*2, lnjmax, gnk, lnk, row_comm, ier)
-! use ez call because previous RPN_MPI_transpose_xz has performed initialization
+!
+! we can use the ez call because the previous RPN_MPI_transpose_xz has performed the required initialization
   time4 = MPI_Wtime()
   call RPN_MPI_ez_transpose_xz(LoC(z2), LoC(zt), .false., lnimax*2, lnjmax, lnk, ier)
   call RPN_MPI_ez_transpose_xz(LoC(z2), LoC(zt), .false., lnimax*2, lnjmax, lnk, ier)
@@ -185,6 +192,7 @@ subroutine rpn_mpi_test_104
     enddo
   endif
 
+  ! verify that array z2 is identical to original array z
   errors = 0
   do k = 1, gnk
   do j = 1, lnj
@@ -194,8 +202,7 @@ subroutine rpn_mpi_test_104
   enddo
   enddo
   write(0,*) 'errors =',errors
-!   if(rank == 0) write(0,3) 'times =', time1, time2, time3, time4
-  if(rank == 0) call RPN_MPI_print_transpose_times
+  if(rank == 0) call RPN_MPI_print_transpose_times  ! print collected timings
 
 1 call MPI_Finalize(ier)
   return
