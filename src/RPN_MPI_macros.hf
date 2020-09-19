@@ -2,7 +2,7 @@
 ! gives the "rpn_mpi_loc" derived type to an address obtained with loc
 !
 #if ! defined(LoC)
-#define LoC(what) rpn_mpi_loc(loc(what))
+#define LoC(what) rpn_mpi_loc(transfer(loc(what),C_NULL_PTR))
 #endif
 !
 ! gets wrapped value from a RPN_MPI derived type
