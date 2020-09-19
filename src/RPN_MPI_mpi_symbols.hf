@@ -20,10 +20,10 @@
 ! RPN_MPI symbols used for split_by_memory_domain
 ! CONSTANTS
 !
-  integer, parameter :: RPN_MPI_BY_NUMA   = Z'800000'
-  integer, parameter :: RPN_MPI_BY_SOCKET = Z'800001'
-  integer, parameter :: RPN_MPI_BY_HOST   = Z'800002'
-  integer, parameter :: RPN_MPI_BY_NODE   = Z'800003'
+  integer, parameter :: RPN_MPI_BY_NUMA   = int(Z'800000')
+  integer, parameter :: RPN_MPI_BY_SOCKET = int(Z'800001')
+  integer, parameter :: RPN_MPI_BY_HOST   = int(Z'800002')
+  integer, parameter :: RPN_MPI_BY_NODE   = int(Z'800003')
 !******
 !===================================================================
 !****t* rpn_mpi/InterfaceTypes
@@ -90,7 +90,7 @@
 ! as the names inside may change WITHOUT WARNING in a newer release
 ! TYPES
   type, BIND(C) :: RPN_MPI_Loc     ! wrapped generic array address
-    integer(C_INTPTR_T) :: p
+    type(C_PTR) :: p
   end type
 
   type, BIND(C) :: RPN_MPI_Fcom    ! the Fortran trio, wrapped communicator, size, and rank
