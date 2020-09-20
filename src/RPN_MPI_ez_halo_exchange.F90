@@ -125,6 +125,7 @@ module RPN_MPI_halo_cache
   use rpn_mpi_mpif
   implicit none
 #include <RPN_MPI_system_interfaces.hf>
+#include <RPN_MPI_mpi_symbols.hf>
   integer, parameter :: NTS = 9
   integer(kind=8), dimension(NTS) :: ts = [0,0,0,0,0,0,0,0,0]   ! timing points
 !   logical, save :: redblack = .false.  ! if true, use fully synchronous (send, recv, no sendrecv) method
@@ -145,34 +146,33 @@ contains
 ! this routine will perform a horizontal halo exchange with NO PERIODIC BOUNDARY conditions 
 ! for all "planes" of a "grid"
 !
-! row         : RPN_MPI communicator for the grid row this PE belongs to
-! col         : RPN_MPI communicator for the grid column this PE belongs to
+! row0        : RPN_MPI communicator for the grid row this PE belongs to
+! col0        : RPN_MPI communicator for the grid column this PE belongs to
 ! minx, maxx, miny, maxy : horizontal(plane) dimensions of array pointed to by g
 ! nk          : vertical dimension of array pointed to by g
 ! lni, lnj    : "useful" horizontal dimensions of array pointed to byy g
 ! halox       : number of "halo" points along x
 ! haloy       : number of "halo" points along y
-! g           : address (wrapped) of array
+! g0          : address (wrapped) of array
 !
 ! SEE ALSO
 !   RPN_MPI_ez_halo Halo
 !
 ! SYNOPSIS
- subroutine RPN_MPI_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo') !InTf!
+ subroutine RPN_MPI_halo(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row0,col0) BIND(C,name='RPN_MPI_halo') !InTf!
 ! IGNORE
   implicit none
 !! import :: RPN_MPI_Loc, RPN_MPI_Comm, C_INT                                          !InTf!
 ! ARGUMENTS
   integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
-!! type(RPN_MPI_Comm), intent(IN) :: row,col                                           !InTf!
-!! type(RPN_MPI_Loc), intent(IN), value :: g                                           !InTf!
+  type(RPN_MPI_Comm), intent(IN) :: row0,col0                                          !InTf!
+  type(RPN_MPI_Loc), intent(IN), value :: g0                                           !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
-! white lie in published interface, g is published as an address passed by value
-  integer(C_INT), intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
-  integer(C_INT), intent(IN)    :: row,col
-
+  integer(C_INT), dimension(minx:maxx,miny:maxy,nk) :: g
+  pointer(pg, g)
+  integer(C_INT)    :: row,col
   integer :: j, k, nw, ier
   integer, dimension(MPI_STATUS_SIZE) :: status
   integer, dimension(halox,lnj,nk) :: halo_from_west, halo_to_west
@@ -182,6 +182,9 @@ contains
   integer(kind=8),dimension(10) :: t
 !   integer(kind=8), external :: cpu_real_time_ticks
 
+  row = row0%wrapped_value
+  col = col0%wrapped_value
+  pg = transfer(g0%p,pg)
   if(row .ne. rowcom .or. col .ne. colcom) then  ! different set of row / column
     rowcom = row
     call MPI_Comm_rank(rowcom, rankx, ier)
@@ -287,23 +290,31 @@ contains
 !   RPN_MPI_halo Halo
 !
 ! SYNOPSIS
- subroutine RPN_MPI_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row,col) BIND(C,name='RPN_MPI_halo_8')  !InTf!
+ subroutine RPN_MPI_halo_8(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row0,col0) BIND(C,name='RPN_MPI_halo_8')  !InTf!
 ! IGNORE
   use ISO_C_BINDING
   implicit none
+  interface
+    subroutine RPN_MPI_halo(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row0,col0) BIND(C,name='RPN_MPI_halo')
+      import :: RPN_MPI_Loc, RPN_MPI_Comm, C_INT
+      implicit none
+      integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
+      type(RPN_MPI_Comm), intent(IN) :: row0,col0
+      type(RPN_MPI_Loc), intent(IN), value :: g0
+     end subroutine RPN_MPI_halo
+  end interface
 !! import :: RPN_MPI_Loc, RPN_MPI_Comm, C_INT                                          !InTf!
 ! ARGUMENTS
   integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
-!! type(RPN_MPI_Comm), intent(IN) :: row,col                                           !InTf!
-!! type(RPN_MPI_Loc), intent(IN), value :: g                                           !InTf!
+   type(RPN_MPI_Comm), intent(IN) :: row0,col0                                         !InTf!
+   type(RPN_MPI_Loc), intent(IN), value :: g0                                          !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
-! white lie in published interface, g is published as an address passed by value
-  integer(C_INT), intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
-  integer(C_INT), intent(IN)    :: row,col
+!   integer(C_INT), intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
+!   integer(C_INT), intent(IN)    :: row,col
 
-  call RPN_MPI_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,row,col)
+  call RPN_MPI_halo(g0,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy,row0,col0)
   return
  end subroutine RPN_MPI_halo_8                                                           !InTf!
 
@@ -318,25 +329,33 @@ contains
 !   RPN_MPI_halo Halo
 !
 ! SYNOPSIS
- subroutine RPN_MPI_ez_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo')       !InTf!
+ subroutine RPN_MPI_ez_halo(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo')       !InTf!
 ! IGNORE
   use ISO_C_BINDING
   implicit none
+  interface
+    subroutine RPN_MPI_halo(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,row0,col0) BIND(C,name='RPN_MPI_halo')
+      import :: RPN_MPI_Loc, RPN_MPI_Comm, C_INT
+      implicit none
+      integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
+      type(RPN_MPI_Comm), intent(IN) :: row0,col0
+      type(RPN_MPI_Loc), intent(IN), value :: g0
+     end subroutine RPN_MPI_halo
+  end interface
 !!  import :: RPN_MPI_Loc, C_INT                                                !InTf!
 ! ARGUMENTS
-  integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
-!! type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
+  integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy   !InTf!
+  type(RPN_MPI_Loc), intent(IN), value :: g0                                    !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
-! white lie in published interface, g is published as an address passed by value
-  integer(C_INT), intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
+!   integer(C_INT), intent(INOUT), dimension(minx:maxx,miny:maxy,nk) :: g
 
   if(rowcom == MPI_COMM_NULL .or. colcom == MPI_COMM_NULL) then
     ! get the appropriate row and column communicators from the internal RPN_MPI data
   endif
 
-  call RPN_MPI_halo(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rowcom,colcom)
+  call RPN_MPI_halo(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy,rpn_mpi_comm(rowcom),rpn_mpi_comm(colcom))
   return
  end subroutine RPN_MPI_ez_halo                                                  !InTf!
 
@@ -351,20 +370,27 @@ contains
 !   RPN_MPI_ez_halo RPN_MPI_halo_8 Halo
 !
 ! SYNOPSIS
- subroutine RPN_MPI_ez_halo_8(g,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo_8')     !InTf!
+ subroutine RPN_MPI_ez_halo_8(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo_8')     !InTf!
 ! IGNORE
   use ISO_C_BINDING
   implicit none
-!!  import :: RPN_MPI_Loc, C_INT                                                      !InTf!
+  interface
+    subroutine RPN_MPI_ez_halo(g0,minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy) bind(C,name='RPN_MPI_ez_halo')
+      import :: RPN_MPI_Loc, C_INT
+      implicit none
+      integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy
+      type(RPN_MPI_Loc), intent(IN), value :: g0
+    end subroutine RPN_MPI_ez_halo
+  end interface
+!!  import :: RPN_MPI_Loc, C_INT                                               !InTf!
 ! ARGUMENTS
-  integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy          !InTf!
-!! type(RPN_MPI_Loc), intent(IN), value :: g                                   !InTf!
+  integer(C_INT), intent(IN)    :: minx,maxx,miny,maxy,lni,lnj,nk,halox,haloy  !InTf!
+  type(RPN_MPI_Loc), intent(IN), value :: g0                                   !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
-! white lie in published interface, g is published as an address passed by value
-  integer(C_INT), intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
-  call RPN_MPI_ez_halo(g,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
+!   integer(C_INT), intent(INOUT), dimension(2*minx-1:2*maxx,miny:maxy,nk) :: g
+  call RPN_MPI_ez_halo(g0,2*minx-1,2*maxx,miny,maxy,2*lni,lnj,nk,2*halox,haloy)
  end subroutine RPN_MPI_ez_halo_8                                                !InTf!
 end module RPN_MPI_halo_cache
 !====================================================================================================
@@ -492,15 +518,14 @@ end module RPN_MPI_halo_cache
   implicit none
 !!  import :: RPN_MPI_Comm, C_INT, C_CHAR                    !InTf!
 ! ARGUMENTS
-!! type(RPN_MPI_Comm), intent(IN) :: row, col                !InTf!
-  integer(C_INT), intent(IN) :: row, col
+  type(RPN_MPI_Comm), intent(IN) :: row, col                 !InTf!
   character(C_CHAR), dimension(*), intent(IN) :: mode        !InTf!
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 !******
   integer :: ier
-  rowcom  = row   ! row communicator
-  colcom  = col   ! column communicator
+  rowcom  = row%wrapped_value   ! row communicator
+  colcom  = col%wrapped_value   ! column communicator
   call MPI_comm_size(rowcom, sizex, ier)  ! size of row
   call MPI_comm_rank(rowcom, rankx, ier)  ! rank in row
   call MPI_comm_size(colcom, sizey, ier)  ! size of column

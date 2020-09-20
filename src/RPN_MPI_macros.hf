@@ -4,6 +4,10 @@
 #if ! defined(LoC)
 #define LoC(what) rpn_mpi_loc(transfer(loc(what),C_NULL_PTR))
 #endif
+! C_LoC makes a type(C_PTR) object (address of what)
+#if ! defined(C_LoC)
+#define C_LoC(what) transfer(loc(what),C_NULL_PTR)
+#endif
 !
 ! gets wrapped value from a RPN_MPI derived type
 !

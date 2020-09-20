@@ -134,7 +134,7 @@ subroutine sub3
   type(mpi_layout_f)                :: lw  ! "wrapped" RPN_MPI layout information (replaces mw)
   integer :: ier, count, dest, tag
   logical :: false = .false.
-  integer, dimension(1,2,3) :: array
+  integer(C_INT), dimension(1,2,3), target :: array
   type(RPN_MPI_Loc)  :: buf        ! the address of any array
   type(RPN_MPI_Comm) :: comm       ! a communicator
   integer, dimension(:), allocatable :: mpistatus
@@ -215,9 +215,9 @@ subroutine sub3
 
   allocate(mpistatus(dw%MPI_STATUS_SIZE))
 !  put address of array into "wrapped pointer"
-  buf   = RPN_MPI_Loc(loc(array))    ! way #1, use derived type constructor
-  buf   = LoC(array)                 ! way #2, use special macro Loc (CASE SENSITIVE)
-  buf%p = loc(array)                 ! way #3, not recommended, will break if name of internal element changes
+  buf   = RPN_MPI_Loc(C_LOC(array))    ! way #1, use derived type constructor
+  buf   = LoC(array)                   ! way #2, use special macro Loc (CASE SENSITIVE)
+  buf%p = C_LOC(array)                 ! way #3, not recommended, will break if name of internal element changes
   if(false) then  ! never executed, syntax test for wrapped types usage when calling the MPI library
     call MPI_Bcast(buf, count, dw%MPI_INTEGER, 0, comm, ier)
     call MPI_Barrier(dw%MPI_COMM_WORLD, ier)

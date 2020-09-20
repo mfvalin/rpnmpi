@@ -102,7 +102,8 @@
 module RPN_MPI_transpose_mod
   use rpn_mpi_mpif
   implicit none
-  integer, dimension(:), pointer, save :: sendcount => NULL()     ! tables for alltoallv
+#include <RPN_MPI_mpi_symbols.hf>
+  integer, dimension(:), pointer, save :: sendcount => NULL()     ! tables for xz transpose alltoallv
   integer, dimension(:), pointer, save :: senddispl => NULL()
   integer, dimension(:), pointer, save :: recvcount => NULL()
   integer, dimension(:), pointer, save :: recvdispl => NULL()
@@ -180,7 +181,7 @@ end subroutine RPN_MPI_print_transpose_times
   rowcom = row_comm
   call MPI_Comm_size(rowcom, m, ierr)                ! get size of row coumunicator
   call MPI_Comm_rank(rowcom, rowrank, ierr)          ! rank in row
-  if(npex < m) call RPN_MPI_transpose_alloc(m)       ! allocate arrays if not large enough
+  if(npex < m) call RPN_MPI_transpose_alloc(m)       ! (re)allocate arrays if not large enough
   npex   = m
   call MPI_Allgather(lnkx, 1, MPI_INTEGER, countnk, 1, MPI_INTEGER, rowcom, ierr) ! get lnk counts
   if(sum(countnk(1:npex)) .ne. gnk) then             ! ERROR, missing or extra levels
@@ -198,7 +199,7 @@ end subroutine RPN_MPI_print_transpose_times
 
 !****f* rpn_mpi/RPN_MPI_ez_transpose_xz
 ! DESCRIPTION
-! ezversion of xz transpose (row communicator is implicit)
+! ez version of xz transpose (row communicator is implicit)
 ! see RPN_MPI_transpose_xz for detailed description of arguments
 !
 ! SEE ALSO
@@ -214,19 +215,38 @@ end subroutine RPN_MPI_print_transpose_times
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
 !! ! RPN_MPI_Loc is essentially the wrapped address of some array
-!! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
+  type(RPN_MPI_Loc), intent(IN), value :: z, zt                 !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lnix, lnjy, lnkx                       !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
 ! IGNORE
 ! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lnix,lnjy,*), intent(INOUT)      :: z      ! NO HALO in arrays 
-  integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
+!   integer, dimension(lnix,lnjy,*), intent(INOUT)      :: z      ! NO HALO in arrays 
+!   integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
 !******
+  interface
+    subroutine RPN_MPI_transpose_xz(z, zt, forward, lnix, lnjy, gnk, lnkx, row_comm, ierr)
+      import :: RPN_MPI_Loc
+      type(RPN_MPI_Loc), intent(IN), value :: z, zt
+      logical, intent(IN) :: forward
+      integer, intent(IN) :: lnix, lnjy, lnkx, gnk
+      integer, intent(IN) :: row_comm
+      integer, intent(OUT) :: ierr 
+    end subroutine RPN_MPI_transpose_xz
+    subroutine RPN_MPI_transpose_xz_s(z, zt, forward, lnix, lnjy, gnk, lnkx, row_comm, ierr)
+      import :: RPN_MPI_Loc
+      type(RPN_MPI_Loc), intent(IN), value :: z, zt
+      logical, intent(IN) :: forward
+      integer, intent(IN) :: lnix, lnjy, lnkx, gnk
+      integer, intent(IN) :: row_comm
+      integer, intent(OUT) :: ierr 
+    end subroutine RPN_MPI_transpose_xz_s
+  end interface
 
   ierr = MPI_ERROR
   if(npex == 0 .or. rowcom == MPI_COMM_NULL .or. nk ==0) return ! not initialized properly
 
+  ! call the "non rolling wave" version
   call RPN_MPI_transpose_xz(z, zt, forward, lnix, lnjy, nk, lnkx, rowcom, ierr)
 
  end subroutine RPN_MPI_ez_transpose_xz                         !InTf!
@@ -264,34 +284,108 @@ end subroutine RPN_MPI_print_transpose_times
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 ! SYNOPSIS
- subroutine RPN_MPI_transpose_xz(z, zt, forward, lnix, lnjy, gnk, lnkx, row_comm, ierr) !InTf!
+ subroutine RPN_MPI_transpose_xz(z0, zt0, forward, lnix, lnjy, gnk, lnkx, row_comm, ierr) !InTf!
 ! IGNORE
   use ISO_C_BINDING
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
-!! ! RPN_MPI_Loc is essentially the wrapped address of some array
-!! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
+!! ! RPN_MPI_Loc is the wrapped address of some array
+  type(RPN_MPI_Loc), intent(IN), value :: z0, zt0               !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lnix, lnjy, gnk, lnkx                  !InTf!
   integer, intent(IN) :: row_comm                               !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
-! IGNORE
-! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lnix,lnjy,gnk), intent(INOUT)    :: z      ! NO HALO in arrays 
-  integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
+!   integer, dimension(lnix,lnjy,gnk), intent(INOUT)    :: z         ! NO HALO in arrays 
+!   integer, dimension(lnix,lnjy,lnkx,npex), intent(INOUT) :: zt     ! last dimension is npex
 !******
-
   integer :: ix, slot, n, m
+  integer, dimension(:), pointer :: z, zt
 
+  call C_F_POINTER(z0%p,  z,  [lnix*lnjy*gnk])
+  call C_F_POINTER(zt0%p, zt, [lnix*lnjy*lnkx*npex])
   ierr = MPI_ERROR
   if(npex == 0 .or. row_comm .ne. rowcom .or. nk .ne. gnk) then  ! initialize or reinitialize ?
     nk = gnk
     rowcom = row_comm
     call MPI_Comm_size(rowcom, m, ierr)                ! get size of row coumunicator
     call MPI_Comm_rank(rowcom, rowrank, ierr)          ! rank in row
-    if(npex < m) call RPN_MPI_transpose_alloc(m)       ! allocate arrays if not large enough
+    if(npex < m) call RPN_MPI_transpose_alloc(m)       ! (re)allocate arrays if not large enough
+    npex = m                                           ! new array dimension
+    call MPI_Allgather(lnkx, 1, MPI_INTEGER, countnk, 1, MPI_INTEGER, rowcom, ierr) ! get lnk counts
+    if(sum(countnk(1:npex)) .ne. gnk) goto 222         ! ERROR, missing or extra levels
+  endif
+
+  if(forward) then
+    slot = 1
+  else
+    slot = 2
+  endif
+  ix = mod(counts(slot) + 1, MAXTMG)
+  counts(slot) = ix
+
+  times(slot,ix) = MPI_Wtime()
+  if(colcom .ne. MPI_COMM_NULL) moxz = 1               ! can be set to 2/4/... deactivated for now
+  if(forward) then                                     ! z -> zt
+    sendcount(1:npex) = countnk(1:npex) * lnix * lnjy  ! may be zero for some PEs
+    recvcount(1:npex) = lnkx * lnix * lnjy             ! may be zero for this PE
+    senddispl(1) = 0
+    recvdispl(1) = 0
+    do n = 2, npex
+      senddispl(n) = sendcount(n-1) + senddispl(n-1)
+      recvdispl(n) = recvcount(n-1) + recvdispl(n-1)
+    enddo
+    call MPI_Alltoallv(z , sendcount, senddispl, MPI_INTEGER,               &
+                       zt, recvcount, recvdispl, MPI_INTEGER, rowcom, ierr)
+  else                                                 ! zt -> z
+    sendcount(1:npex) = lnkx * lnix * lnjy             ! may be zero for this PE
+    recvcount(1:npex) = countnk(1:npex) * lnix * lnjy  ! may be zero for some PEs
+    do n = 2, npex
+      senddispl(n) = sendcount(n-1) + senddispl(n-1)
+      recvdispl(n) = recvcount(n-1) + recvdispl(n-1)
+    enddo
+    call MPI_Alltoallv(zt, sendcount, senddispl, MPI_INTEGER,               &
+                       z , recvcount, recvdispl, MPI_INTEGER, rowcom, ierr)
+  endif
+  times(slot,ix) = MPI_Wtime() - times(slot,ix)
+
+1 return
+222 continue
+  write(0,*) 'ERROR: the sum of lnk() does not match gnk'
+  goto 1
+ end subroutine RPN_MPI_transpose_xz !InTf!
+
+! version with "rolling wave" alltoall
+ subroutine RPN_MPI_transpose_xz_s(z0, zt0, forward, lnix, lnjy, gnk, lnkx, row_comm, ierr) !InTf!
+  use ISO_C_BINDING
+  use RPN_MPI_transpose_mod
+  implicit none
+!! import :: RPN_MPI_Loc                                        !InTf!
+!! ! RPN_MPI_Loc is essentially the wrapped address of some array
+  type(RPN_MPI_Loc), intent(IN), value :: z0, zt0               !InTf!
+  logical, intent(IN) :: forward                                !InTf!
+  integer, intent(IN) :: lnix, lnjy, gnk, lnkx                  !InTf!
+  integer, intent(IN) :: row_comm                               !InTf!
+  integer, intent(OUT) :: ierr                                  !InTf!
+! IGNORE
+! little white lie in interface, z, zt are advertised as addresses passed by value
+!   integer, dimension(lnix,lnjy,gnk), intent(INOUT)    :: z      ! NO HALO in arrays 
+!   integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
+!******
+
+  integer :: m, ix, slot, n
+  integer, dimension(:), pointer :: z, zt
+
+  call C_F_POINTER(z0%p,  z,  [lnix*lnjy*gnk])
+  call C_F_POINTER(zt0%p, zt, [lnix*lnjy*lnkx*npex])
+  ierr = MPI_ERROR
+  if(npex == 0 .or. row_comm .ne. rowcom .or. nk .ne. gnk) then  ! initialize or reinitialize ?
+    nk = gnk
+    rowcom = row_comm
+    call MPI_Comm_size(rowcom, m, ierr)                ! get size of row coumunicator
+    call MPI_Comm_rank(rowcom, rowrank, ierr)          ! rank in row
+    if(npex < m) call RPN_MPI_transpose_alloc(m)       ! (re)allocate arrays if not large enough
     npex = m                                           ! new array dimension
     call MPI_Allgather(lnkx, 1, MPI_INTEGER, countnk, 1, MPI_INTEGER, rowcom, ierr) ! get lnk counts
     if(sum(countnk(1:npex)) .ne. gnk) goto 222         ! ERROR, missing or extra levels
@@ -344,76 +438,6 @@ end subroutine RPN_MPI_print_transpose_times
 222 continue
   write(0,*) 'ERROR: the sum of lnk() does not match gnk'
   goto 1
- end subroutine RPN_MPI_transpose_xz !InTf!
-
- subroutine RPN_MPI_transpose_xz_s(z, zt, forward, lnix, lnjy, gnk, lnkx, row_comm, ierr) !InTf!
-  use ISO_C_BINDING
-  use RPN_MPI_transpose_mod
-  implicit none
-!! import :: RPN_MPI_Loc                                        !InTf!
-!! ! RPN_MPI_Loc is essentially the wrapped address of some array
-!! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
-  logical, intent(IN) :: forward                                !InTf!
-  integer, intent(IN) :: lnix, lnjy, gnk, lnkx                  !InTf!
-  integer, intent(IN) :: row_comm                               !InTf!
-  integer, intent(OUT) :: ierr                                  !InTf!
-! IGNORE
-! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lnix,lnjy,gnk), intent(INOUT)    :: z      ! NO HALO in arrays 
-  integer, dimension(lnix,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npex
-!******
-
-  integer :: m, ix, slot, n
-
-  ierr = MPI_ERROR
-  if(npex == 0 .or. row_comm .ne. rowcom .or. nk .ne. gnk) then  ! initialize or reinitialize ?
-    nk = gnk
-    rowcom = row_comm
-    call MPI_Comm_size(rowcom, m, ierr)                ! get size of row coumunicator
-    call MPI_Comm_rank(rowcom, rowrank, ierr)          ! rank in row
-    if(npex < m) call RPN_MPI_transpose_alloc(m)       ! allocate arrays if not large enough
-    npex = m                                           ! new array dimension
-    call MPI_Allgather(lnkx, 1, MPI_INTEGER, countnk, 1, MPI_INTEGER, rowcom, ierr) ! get lnk counts
-    if(sum(countnk(1:npex)) .ne. gnk) goto 222         ! ERROR, missing or extra levels
-  endif
-
-  if(forward) then
-    slot = 1
-  else
-    slot = 2
-  endif
-  ix = mod(counts(slot) + 1, MAXTMG)
-  counts(slot) = ix
-
-  times(slot,ix) = MPI_Wtime()
-  if(colcom .ne. MPI_COMM_NULL) moxz = 1               ! can be set to 2/4/... deactivated for now
-  if(forward) then                                     ! z -> zt
-    sendcount(1:npex) = countnk(1:npex) * lnix * lnjy  ! may be zero for some PEs
-    recvcount(1:npex) = lnkx * lnix * lnjy             ! may be zero for this PE
-    senddispl(1) = 0
-    recvdispl(1) = 0
-    do n = 2, npex
-      senddispl(n) = sendcount(n-1) + senddispl(n-1)
-      recvdispl(n) = recvcount(n-1) + recvdispl(n-1)
-    enddo
-    call MPI_Alltoallv(z , sendcount, senddispl, MPI_INTEGER,               &
-                       zt, recvcount, recvdispl, MPI_INTEGER, rowcom, ierr)
-  else                                                 ! zt -> z
-    sendcount(1:npex) = lnkx * lnix * lnjy             ! may be zero for this PE
-    recvcount(1:npex) = countnk(1:npex) * lnix * lnjy  ! may be zero for some PEs
-    do n = 2, npex
-      senddispl(n) = sendcount(n-1) + senddispl(n-1)
-      recvdispl(n) = recvcount(n-1) + recvdispl(n-1)
-    enddo
-    call MPI_Alltoallv(zt, sendcount, senddispl, MPI_INTEGER,               &
-                       z , recvcount, recvdispl, MPI_INTEGER, rowcom, ierr)
-  endif
-  times(slot,ix) = MPI_Wtime() - times(slot,ix)
-
-1 return
-222 continue
-  write(0,*) 'ERROR: the sum of lnk() does not match gnk'
-  goto 1
  end subroutine RPN_MPI_transpose_xz_s !InTf!
 
 !****f* rpn_mpi/RPN_MPI_ez_transpose_xy
@@ -434,16 +458,35 @@ end subroutine RPN_MPI_print_transpose_times
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
 !! ! RPN_MPI_Loc is essentially the wrapped address of some array
-!! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
+  type(RPN_MPI_Loc), intent(IN), value :: z, zt                 !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
 ! IGNORE
 ! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
+!   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
+!   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 !******
+  interface
+    subroutine RPN_MPI_transpose_xy(z, zt, forward, lniy, lnjy, lnkx, col_comm, ierr)
+      import :: RPN_MPI_Loc
+      type(RPN_MPI_Loc), intent(IN), value :: z, zt
+      logical, intent(IN) :: forward
+      integer, intent(IN) :: lniy, lnjy, lnkx
+      integer, intent(IN) :: col_comm
+      integer, intent(OUT) :: ierr 
+    end subroutine RPN_MPI_transpose_xy
+    subroutine RPN_MPI_transpose_xy_s(z, zt, forward, lniy, lnjy, lnkx, col_comm, ierr)
+      import :: RPN_MPI_Loc
+      type(RPN_MPI_Loc), intent(IN), value :: z, zt
+      logical, intent(IN) :: forward
+      integer, intent(IN) :: lniy, lnjy, lnkx
+      integer, intent(IN) :: col_comm
+      integer, intent(OUT) :: ierr 
+    end subroutine RPN_MPI_transpose_xy_s
+  end interface
 
+  ! call the "non rolling wave" version
   call RPN_MPI_transpose_xy(z, zt, forward, lniy, lnjy, lnkx, colcom, ierr)
  end subroutine RPN_MPI_ez_transpose_xy                         !InTf!
 
@@ -478,8 +521,8 @@ end subroutine RPN_MPI_print_transpose_times
 ! zt        : transposed arrray, dimension(lniy,lnjy,lnkx,npey)
 ! lniy      : number of local points along x (assumed to be IDENTICAL on ALL PEs in column)
 ! lnjy      : number of local points along y (assumed to be IDENTICAL on ALL PEs in column)
-! lnkx      : local number of levels in transposed array zt (the SUM of lnkx MUST be equal to gnk)
-! col_comm  : communicator for this transpose
+! lnkx      : local number of levels in transposed array zt (must be IDENTICAL on ALL PEs in column)
+! col_comm  : column communicator for this transpose
 ! ierr      : error flag, same as MPI
 !
 ! SEE ALSO
@@ -487,7 +530,7 @@ end subroutine RPN_MPI_print_transpose_times
 ! AUTHOR
 !  M.Valin Recherche en Prevision Numerique 2020
 ! SYNOPSIS
- subroutine RPN_MPI_transpose_xy(z, zt, forward, lniy, lnjy, lnkx, col_comm, ierr) !InTf!
+ subroutine RPN_MPI_transpose_xy(z0, zt0, forward, lniy, lnjy, lnkx, col_comm, ierr) !InTf!
 ! IGNORE
   use ISO_C_BINDING
   use RPN_MPI_transpose_mod
@@ -495,19 +538,20 @@ end subroutine RPN_MPI_print_transpose_times
 !! import :: RPN_MPI_Loc                                        !InTf!
 ! ARGUMENTS
 !! ! RPN_MPI_Loc is essentially the wrapped address of some array
-!! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
+  type(RPN_MPI_Loc), intent(IN), value :: z0, zt0               !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!
   integer, intent(IN) :: col_comm                               !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
-! IGNORE
-! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 !******
+!   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
+!   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 
   integer :: ix, slot
+  integer, dimension(:), pointer :: z, zt
 
+  call C_F_POINTER(z0%p,  z,  [lniy*lnjy*lnkx])
+  call C_F_POINTER(zt0%p, zt, [lniy*lnjy*lnkx])
   ierr = MPI_ERROR
   if(npey == 0 .or. col_comm .ne. colcom) then   ! update/initialize internal tables if necessary
     colcom = col_comm
@@ -538,23 +582,26 @@ end subroutine RPN_MPI_print_transpose_times
  end subroutine RPN_MPI_transpose_xy !InTf!
 
 ! version with "rolling wave" alltoall
- subroutine RPN_MPI_transpose_xy_s(z, zt, forward, lniy, lnjy, lnkx, col_comm, ierr) !InTf!
+ subroutine RPN_MPI_transpose_xy_s(z0, zt0, forward, lniy, lnjy, lnkx, col_comm, ierr) !InTf!
   use ISO_C_BINDING
   use RPN_MPI_transpose_mod
   implicit none
 !! import :: RPN_MPI_Loc                                        !InTf!
 !! ! RPN_MPI_Loc is essentially the wrapped address of some array
-!! type(RPN_MPI_Loc), intent(IN), value :: z, zt                !InTf!
+  type(RPN_MPI_Loc), intent(IN), value :: z0, zt0               !InTf!
   logical, intent(IN) :: forward                                !InTf!
   integer, intent(IN) :: lniy, lnjy, lnkx                       !InTf!
   integer, intent(IN) :: col_comm                               !InTf!
   integer, intent(OUT) :: ierr                                  !InTf!
 ! little white lie in interface, z, zt are advertised as addresses passed by value
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
-  integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
+!   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: z      ! NO HALO in arrays 
+!   integer, dimension(lniy,lnjy,lnkx,*), intent(INOUT) :: zt     ! last dimension is npey
 
   integer :: ix, slot, m
+  integer, dimension(:), pointer :: z, zt
 
+  call C_F_POINTER(z0%p,  z,  [lniy*lnjy*lnkx])
+  call C_F_POINTER(zt0%p, zt, [lniy*lnjy*lnkx])
   ierr = MPI_ERROR
   if(npey == 0 .or. col_comm .ne. colcom) then   ! update/initialize internal tables if necessary
     colcom = col_comm
@@ -588,6 +635,3 @@ end subroutine RPN_MPI_print_transpose_times
 
   return
  end subroutine RPN_MPI_transpose_xy_s !InTf!
-
-
-

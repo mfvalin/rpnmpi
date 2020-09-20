@@ -106,7 +106,9 @@ subroutine rpn_mpi_test_103
 !      colcomm = p%comm%grid%column
 !
 !
-  p%a = loc(z)                             ! address of array subject to halo exchange
+  p%p = C_LoC(z)                     ! address of array subject to halo exchange (NOT RECOMMENDED)
+  p%p = transfer(loc(z),C_NULL_PTR)  ! address of array subject to halo exchange (NOT RECOMMENDED)
+  p   = LoC(z)                       ! recommended way, the previous 2 may break if internal changes are made
 !   row_comm = RPN_MPI_Comm(rowcomm)
 !   col_comm = RPN_MPI_Comm(colcomm)
   call RPN_MPI_ez_halo(LoC(z),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy)
@@ -117,7 +119,7 @@ subroutine rpn_mpi_test_103
   do i = 1, NXCH
     call MPI_Barrier(d%MPI_COMM_WORLD,ier)
     t1 = MPI_Wtime()
-    p%a = loc(z)
+    p  = LoC(z)
     call RPN_MPI_halo(LoC(z),1-halox,NI+halox,1-haloy,NJ+haloy,NI,NJ,NK,halox,haloy,row_comm,col_comm)
     txch(i) = MPI_Wtime() - t1
   enddo
