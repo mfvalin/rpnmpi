@@ -270,8 +270,8 @@ end subroutine RPN_MPI_print_transpose_times
 !   all slices along x (all i indices, gni values, npex slices)
 !
 ! forward transpose (forward == .true.)
-! z         : original array, dimension(lnix,lnjy,gnk)
-! zt        : transposed arrray, dimension(lnix,lnjy,lnkx,npex)
+! z0        : original array, dimension(lnix,lnjy,gnk)
+! zt0       : transposed arrray, dimension(lnix,lnjy,lnkx,npex)
 ! lnix      : number of local points along x (assumed to be IDENTICAL on ALL PEs in row)
 ! lnjy      : number of local points along y (assumed to be IDENTICAL on ALL PEs in row)
 ! gnk       : total number of levels
@@ -322,7 +322,7 @@ end subroutine RPN_MPI_print_transpose_times
   else
     slot = 2
   endif
-  ix = mod(counts(slot) + 1, MAXTMG)
+  ix = mod(counts(slot) , MAXTMG) +1
   counts(slot) = ix
 
   times(slot,ix) = MPI_Wtime()
@@ -396,7 +396,7 @@ end subroutine RPN_MPI_print_transpose_times
   else
     slot = 2
   endif
-  ix = mod(counts(slot) + 1, MAXTMG)
+  ix = mod(counts(slot) , MAXTMG) +1
   counts(slot) = ix
 
   times(slot,ix) = MPI_Wtime()
@@ -565,7 +565,7 @@ end subroutine RPN_MPI_print_transpose_times
   else
     slot = 4
   endif
-  ix = mod(counts(slot) + 1, MAXTMG)
+  ix = mod(counts(slot) , MAXTMG) +1
   counts(slot) = ix
 
   times(slot,ix) = MPI_Wtime()
@@ -615,7 +615,7 @@ end subroutine RPN_MPI_print_transpose_times
   else
     slot = 4
   endif
-  ix = mod(counts(slot) + 1, MAXTMG)
+  ix = mod(counts(slot) , MAXTMG) +1
   counts(slot) = ix
 
   times(slot,ix) = MPI_Wtime()
