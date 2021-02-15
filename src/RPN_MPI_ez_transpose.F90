@@ -184,7 +184,7 @@ end subroutine RPN_MPI_print_transpose_times
   if(npex < m) call RPN_MPI_transpose_alloc(m)       ! (re)allocate arrays if not large enough
   npex   = m
   call MPI_Allgather(lnkx, 1, MPI_INTEGER, countnk, 1, MPI_INTEGER, rowcom, ierr) ! get lnk counts
-  if(sum(countnk(1:npex)) .ne. gnk) then             ! ERROR, missing or extra levels
+  if(sum(countnk(1:npex)) .ne. gnk .or. any(countnk(1:npex) < 0)) then    ! ERROR, missing or extra levels
     ierr = MPI_ERROR
     write(0,*) 'ERROR: the sum of lnk(:) does not match gnk'
     return
