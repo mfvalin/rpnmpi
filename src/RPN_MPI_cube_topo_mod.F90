@@ -27,9 +27,10 @@ module rpn_mpi_types_mod
   type :: neighbor
     type(MPI_Comm) :: comm = MPI_COMM_NULL
     integer(C_INT) :: rank = -1
+    integer(C_INT) :: side = -1
     logical :: flip = .false.
   end type
-  type(neighbor), parameter :: NEIGHBOR_NULL = neighbor(MPI_COMM_NULL, -1, .false.)
+  type(neighbor), parameter :: NEIGHBOR_NULL = neighbor(MPI_COMM_NULL, -1, -1, .false.)
 
   type :: cube_topology
     type(comm_size_rank) :: cube_comm = MPI_COMM_SIZE_RANK_NULL
@@ -52,6 +53,25 @@ module rpn_mpi_types_mod
 
   contains
 
+subroutine rpn_mpi_cube_exchange_r4(cube, edges_s, edges_r, nv, lnij, nk)
+  implicit none
+  type(cube_topology), intent(IN) :: cube    ! cube topology
+  integer, intent(IN) :: nv, lnij, nk
+  real, dimension(nv, lnij, nk, 4), intent(IN), target  :: edges_s
+  real, dimension(nv, lnij, nk, 4), intent(OUT), target :: edges_r
+
+  integer, dimension(:, :, :, :), pointer :: edges_si, edges_ri
+  type(C_PTR) :: edges_sip, edges_rip
+
+  edges_sip = C_LOC(edges_s(1,1,1,1))
+  call C_F_POINTER(edges_sip, edges_si, [nv, lnij, nk, 4])
+  edges_rip = C_LOC(edges_r(1,1,1,1))
+  call C_F_POINTER(edges_rip, edges_ri, [nv, lnij, nk, 4])
+
+  call rpn_mpi_cube_exchange(cube, edges_si, edges_ri, nv, lnij, nk)
+  
+end subroutine rpn_mpi_cube_exchange_r4
+
 subroutine rpn_mpi_cube_exchange(cube, edges_s, edges_r, nv, lnij, nk)
   implicit none
   type(cube_topology), intent(IN) :: cube    ! cube topology
@@ -64,6 +84,10 @@ subroutine rpn_mpi_cube_exchange(cube, edges_s, edges_r, nv, lnij, nk)
   TYPE(MPI_Status), dimension(4)  :: status_r, status_s
   integer :: count
 
+!   print * ,'north/south/east/west side =',cube%north%side,cube%south%side,cube%east%side,cube%west%side
+!   print * ,'north/south/east/west rank =',cube%north%rank,cube%south%rank,cube%east%rank,cube%west%rank
+!   print * ,'north/south/east/west flip =',cube%north%flip,cube%south%flip,cube%east%flip,cube%west%flip
+!   return
   ! post asynchronous receives first
   count = nv * lnij * nk
   !    MPI_IRECV(BUF, COUNT, DATATYPE, SOURCE, TAG, COMM, REQUEST)
@@ -189,96 +213,96 @@ subroutine rpn_mpi_set_cube_topology(csr, cube, npe)
   west = cube%column == 0
 
   ! not on an edge, same for all sides of the cube
-  if(.not. west)  cube%west  = neighbor(cube%col_comm%comm, my_col - 1, .false.)        ! column to the left
-  if(.not. east)  cube%east  = neighbor(cube%col_comm%comm, my_col + 1, .false.)        ! column to the right
-  if(.not. north) cube%north = neighbor(cube%row_comm%comm, my_row + 1, .false.)        ! row above
-  if(.not. south) cube%south = neighbor(cube%row_comm%comm, my_row - 1, .false.)        ! row below
+  if(.not. west)  cube%west  = neighbor(cube%row_comm%comm, my_col - 1, cube%side+10, .false.)        ! column to the left
+  if(.not. east)  cube%east  = neighbor(cube%row_comm%comm, my_col + 1, cube%side+10, .false.)        ! column to the right
+  if(.not. north) cube%north = neighbor(cube%col_comm%comm, my_row + 1, cube%side+20, .false.)        ! row above
+  if(.not. south) cube%south = neighbor(cube%col_comm%comm, my_row - 1, cube%side+20, .false.)        ! row below
   if( (.not. west) .and. (.not. east) .and. (.not. north) .and. (.not. south)) return   ! job done
 
   ! take care of edges for all sides of the cube
   select case(cube%side)
     case(0)
       if(west) then
-        cube%west  = neighbor(cube_comm, cube_rank(3, last,  my_row), .false.)
+        cube%west  = neighbor(cube_comm, cube_rank(3, last,  my_row), 3, .false.)
       endif
       if(east) then
-        cube%east  = neighbor(cube_comm, cube_rank(1, 0    , my_row), .false.)
+        cube%east  = neighbor(cube_comm, cube_rank(1, 0    , my_row), 1, .false.)
       endif
       if(north) then
-        cube%north = neighbor(cube_comm, cube_rank(4, my_col, 0    ), .false.)
+        cube%north = neighbor(cube_comm, cube_rank(4, my_col, 0    ), 4, .false.)
       endif
       if(south) then
-        cube%south = neighbor(cube_comm, cube_rank(5, my_col, last ), .false.)
+        cube%south = neighbor(cube_comm, cube_rank(5, my_col, last ), 5, .false.)
       endif
 
     case(1)
       if(west) then
-        cube%west  = neighbor(cube_comm, cube_rank(0, last, my_row  ), .false.)
+        cube%west  = neighbor(cube_comm, cube_rank(0, last, my_row  ), 0, .false.)
       endif
       if(east) then
-        cube%east  = neighbor(cube_comm, cube_rank(2, 0,    my_row  ), .false.)
+        cube%east  = neighbor(cube_comm, cube_rank(2, 0,    my_row  ), 2, .false.)
       endif
       if(north) then
-        cube%north = neighbor(cube_comm, cube_rank(4, last, my_col  ), .false.)
+        cube%north = neighbor(cube_comm, cube_rank(4, last, my_col  ), 4, .false.)
       endif
       if(south) then
-        cube%south = neighbor(cube_comm, cube_rank(5, last, flip_col), .true. )
+        cube%south = neighbor(cube_comm, cube_rank(5, last, flip_col), 5, .true. )
       endif
 
     case(2)
       if(west) then
-        cube%west  = neighbor(cube_comm, cube_rank(1, last,     my_row), .false.)
+        cube%west  = neighbor(cube_comm, cube_rank(1, last,     my_row), 1, .false.)
       endif
       if(east) then
-        cube%east  = neighbor(cube_comm, cube_rank(3, 0,        my_row), .false.)
+        cube%east  = neighbor(cube_comm, cube_rank(3, 0,        my_row), 3, .false.)
       endif
       if(north) then
-        cube%north = neighbor(cube_comm, cube_rank(4, flip_col, last  ), .true. )
+        cube%north = neighbor(cube_comm, cube_rank(4, flip_col, last  ), 4, .true. )
       endif
       if(south) then
-        cube%south = neighbor(cube_comm, cube_rank(5, flip_col, 0     ), .true. )
+        cube%south = neighbor(cube_comm, cube_rank(5, flip_col, 0     ), 5, .true. )
       endif
 
     case(3)
       if(west) then
-        cube%west  = neighbor(cube_comm, cube_rank(2, last, my_row  ), .false.)
+        cube%west  = neighbor(cube_comm, cube_rank(2, last, my_row  ), 2, .false.)
       endif
       if(east) then
-        cube%east  = neighbor(cube_comm, cube_rank(0, 0,    my_row  ), .false.)
+        cube%east  = neighbor(cube_comm, cube_rank(0, 0,    my_row  ), 0, .false.)
       endif
       if(north) then
-        cube%north = neighbor(cube_comm, cube_rank(4, 0,    flip_col), .true. )
+        cube%north = neighbor(cube_comm, cube_rank(4, 0,    flip_col), 4, .true. )
       endif
       if(south) then
-        cube%south = neighbor(cube_comm, cube_rank(5, 0,    my_col  ), .false.)
+        cube%south = neighbor(cube_comm, cube_rank(5, 0,    my_col  ), 5, .false.)
       endif
 
     case(4)
       if(west) then
-        cube%west  = neighbor(cube_comm, cube_rank(3, flip_row, last), .true. )
+        cube%west  = neighbor(cube_comm, cube_rank(3, flip_row, last), 3, .true. )
       endif
       if(east) then
-        cube%east  = neighbor(cube_comm, cube_rank(1, my_row,   last), .false.)
+        cube%east  = neighbor(cube_comm, cube_rank(1, my_row,   last), 1, .false.)
       endif
       if(north) then
-        cube%north = neighbor(cube_comm, cube_rank(2, flip_col, last), .true. )
+        cube%north = neighbor(cube_comm, cube_rank(2, flip_col, last), 2, .true. )
       endif
       if(south) then
-        cube%south = neighbor(cube_comm, cube_rank(0, my_col,   last), .false.)
+        cube%south = neighbor(cube_comm, cube_rank(0, my_col,   last), 0, .false.)
       endif
 
     case(5)
       if(west) then
-        cube%west  = neighbor(cube_comm, cube_rank(3, my_row,   0), .false.)
+        cube%west  = neighbor(cube_comm, cube_rank(3, my_row,   0), 3, .false.)
       endif
       if(east) then
-        cube%east  = neighbor(cube_comm, cube_rank(1, flip_row, 0), .true. )
+        cube%east  = neighbor(cube_comm, cube_rank(1, flip_row, 0), 1, .true. )
       endif
       if(north) then
-        cube%north = neighbor(cube_comm, cube_rank(0, my_col,   0), .false.)
+        cube%north = neighbor(cube_comm, cube_rank(0, my_col,   0), 0, .false.)
       endif
       if(south) then
-        cube%south = neighbor(cube_comm, cube_rank(2, flip_col, 0), .true.)
+        cube%south = neighbor(cube_comm, cube_rank(2, flip_col, 0), 2, .true.)
       endif
 
     case DEFAULT
