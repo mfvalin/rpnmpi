@@ -42,12 +42,19 @@ module rpn_mpi_types_mod
     type(neighbor) :: south = NEIGHBOR_NULL                     ! south neighbor
     type(neighbor) :: east  = NEIGHBOR_NULL                     ! east neighbor
     type(neighbor) :: west  = NEIGHBOR_NULL                     ! west neighbor
+  contains
+    procedure, pass(grid) :: setup => rpn_mpi_set_grid_topology
+    procedure, pass(grid) :: exchange => rpn_mpi_grid_exchange, rpn_mpi_grid_exchange_r4
   end type
 
-  type :: cube_topology
+  type :: cube_topology     ! this time based on subtype grid_topology
     type(comm_size_rank) :: cube_comm = MPI_COMM_SIZE_RANK_NULL ! cube_comm%size == side_comm%size * 6 OR ELSE !!
     integer              :: my_side                             ! my cube side (0-5)
     type(grid_topology)  :: side                                ! side_comm%size == row_comm%size * col_comm%size OR ELSE !!
+
+  contains
+    procedure, pass(cube) :: setup => rpn_mpi_set_cube_topology
+    procedure, pass(cube) :: exchange => rpn_mpi_cube_exchange, rpn_mpi_cube_exchange_r4
   end type
 
 !   type :: cube_topology_old
@@ -71,9 +78,45 @@ module rpn_mpi_types_mod
 
   contains
 
+subroutine rpn_mpi_set_grid_topology(grid, csr, npex, npey, options)
+  use ISO_C_BINDING
+  implicit none
+  class(grid_topology), intent(OUT) :: grid    ! cube topology
+  integer, intent(IN) :: npex, npey
+  integer, intent(IN) :: options
+  type(comm_size_rank), intent(IN) :: csr
+
+end subroutine rpn_mpi_set_grid_topology
+
+subroutine rpn_mpi_grid_exchange_r4(grid, z, halo_x, haloy, mini, maxi, minj, maxj, nk)
+  implicit none
+  class(grid_topology), intent(IN) :: grid    ! grid topology
+  integer, intent(IN) :: halo_x, haloy
+  integer, intent(IN) :: mini, maxi, minj, maxj, nk
+  real, intent(INOUT), dimension(mini:maxi, minj:maxj, nk) :: z
+  
+  integer, dimension(:, :, :), pointer :: zi
+  type(C_PTR) :: zip
+
+  zip = C_LOC(z(mini, minj, 1))
+  call C_F_POINTER(zip, zi, [maxi-mini+1, maxj-minj+1, nk])
+
+  call rpn_mpi_grid_exchange(grid, zi, halo_x, haloy, mini, maxi, minj, maxj, nk)
+
+end subroutine rpn_mpi_grid_exchange_r4
+
+subroutine rpn_mpi_grid_exchange(grid, z, halo_x, haloy, mini, maxi, minj, maxj, nk)
+  implicit none
+  class(grid_topology), intent(IN) :: grid    ! grid topology
+  integer, intent(IN) :: halo_x, haloy
+  integer, intent(IN) :: mini, maxi, minj, maxj, nk
+  integer, intent(INOUT), dimension(mini:maxi, minj:maxj, nk) :: z
+  
+end subroutine rpn_mpi_grid_exchange
+
 subroutine rpn_mpi_cube_exchange_r4(cube, edges_s, edges_r, nv, lnij, nk)
   implicit none
-  type(cube_topology), intent(IN) :: cube    ! cube topology
+  class(cube_topology), intent(IN) :: cube    ! cube topology
   integer, intent(IN) :: nv, lnij, nk
   real, dimension(nv, lnij, nk, 4), intent(IN), target  :: edges_s
   real, dimension(nv, lnij, nk, 4), intent(OUT), target :: edges_r
@@ -95,7 +138,7 @@ end subroutine rpn_mpi_cube_exchange_r4
 ! get edges_r from appropriate neighbor (north, south, east, west)
 subroutine rpn_mpi_cube_exchange(cube, edges_s, edges_r, nv, lnij, nk)
   implicit none
-  type(cube_topology), intent(IN) :: cube    ! cube topology
+  class(cube_topology), intent(IN) :: cube    ! cube topology
   integer, intent(IN) :: nv       ! number of elements in each edge cell
   integer, intent(IN) :: lnij     ! length of the edge
   integer, intent(IN) :: nk       ! number of vertical levels
@@ -182,11 +225,11 @@ subroutine rpn_mpi_cube_exchange(cube, edges_s, edges_r, nv, lnij, nk)
   end subroutine flip_edge
 end subroutine rpn_mpi_cube_exchange
 
-subroutine rpn_mpi_set_cube_topology(csr, cube, npe)
+subroutine rpn_mpi_set_cube_topology(cube, csr, npe)
   use ISO_C_BINDING
   implicit none
+  class(cube_topology), intent(OUT) :: cube    ! cube topology
   type(comm_size_rank), intent(IN) :: csr     ! communicator large enough for the npe x npe x 6 cube
-  type(cube_topology), intent(OUT) :: cube    ! cube topology
   integer, intent(IN) :: npe                  ! each side of the cube will use npe x npe PEs
 
   type(MPI_Comm) cube_comm
@@ -391,7 +434,7 @@ program test
   call mpi_comm_rank(csr%comm, csr%rank)
   npe = nint(sqrt(csr%size/6*1.0))               ! each side will use npe x npe PEs
 
-  call rpn_mpi_set_cube_topology(csr, cube, npe) ! setup of cube topology data
+  call rpn_mpi_set_cube_topology(cube, csr, npe) ! setup of cube topology data
   print *,'PE',csr%rank+1,' of',csr%size, ', side/row/col =',cube%my_side,cube%side%my_column,cube%side%my_row
 
 !      test_edges_create(side,      nv,  lnij, nk, pei,         pej,      npe, edges)
