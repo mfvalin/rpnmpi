@@ -32,12 +32,12 @@ module rpn_mpi_types_mod
   end type
   type(neighbor), parameter :: NEIGHBOR_NULL = neighbor(MPI_COMM_NULL, -1, -1, .false.)
 
-  type :: grid_topology
+  type :: grid_mpi_comm                                         ! basic distributed grid communication setup
     type(comm_size_rank) :: grid_comm = MPI_COMM_SIZE_RANK_NULL ! grid_comm%size == row_comm%size * col_comm%size OR ELSE !!
     integer              :: my_row                              ! my row (0 -> my_column%size - 1 )
-    type(comm_size_rank) :: row = MPI_COMM_SIZE_RANK_NULL       ! row_comm%size == col_comm%size OR ELSE !!
+    type(comm_size_rank) :: row = MPI_COMM_SIZE_RANK_NULL       ! row_comm%size == col_comm%size if it is a cube OR ELSE !!
     integer              :: my_column                           ! my column (0 -> my_row%size - 1
-    type(comm_size_rank) :: column = MPI_COMM_SIZE_RANK_NULL  ! row_comm%size == col_comm%size OR ELSE !!
+    type(comm_size_rank) :: column = MPI_COMM_SIZE_RANK_NULL    ! row_comm%size == col_comm%size if it is a cube OR ELSE !!
     type(neighbor) :: north = NEIGHBOR_NULL                     ! north neighbor
     type(neighbor) :: south = NEIGHBOR_NULL                     ! south neighbor
     type(neighbor) :: east  = NEIGHBOR_NULL                     ! east neighbor
@@ -47,50 +47,171 @@ module rpn_mpi_types_mod
     procedure, pass(grid) :: exchange => rpn_mpi_grid_exchange, rpn_mpi_grid_exchange_r4
   end type
 
-  type :: cube_topology     ! this time based on subtype grid_topology
-    type(comm_size_rank) :: cube_comm = MPI_COMM_SIZE_RANK_NULL ! cube_comm%size == side_comm%size * 6 OR ELSE !!
+  type, extends(grid_mpi_comm) :: grid_with_halo                ! grid point distribution (2D)
+    integer :: gnx = 0                                          ! global dimension of grid along i (user supplied)
+    integer :: gny = 0                                          ! global dimension of grid along j (user supplied)
+    integer :: ni0, nj0                                         ! lower left corner of local portion in the global grid (computed)
+    integer :: minx, maxx, miny, maxy                           ! dimension of local portion of the global grid (computed)
+    integer :: maxhalox = 0                                     ! max halo along i (may be different from maxhaloy) (user supplied)
+    integer :: maxhaloy = 0                                     ! max halo along j (may be different from maxhalox) (user supplied)
+    integer :: disttype = 0                                     ! type of grid distribution (user supplied)
+  contains
+    procedure, pass(grid) :: setup_halo => rpn_mpi_setup_halo
+!     procedure split                    ! split grid across processors
+!     procedure exchange
+  end type
+
+  type :: cube_mpi_comm                                         ! cube communication layout based on grid_mpi_comm
+    type(comm_size_rank) :: cube_comm = MPI_COMM_SIZE_RANK_NULL ! cube_comm%size == side%grid_comm%size * 6 OR ELSE !!
     integer              :: my_side                             ! my cube side (0-5)
-    type(grid_topology)  :: side                                ! side_comm%size == row_comm%size * col_comm%size OR ELSE !!
+    type(grid_mpi_comm)  :: side                                ! side%grid_comm%size == side%row%size * side%column%size OR ELSE !!
+                                                                ! side%row%size == side%column%size OR ELSE !!
 
   contains
     procedure, pass(cube) :: setup => rpn_mpi_set_cube_topology
     procedure, pass(cube) :: exchange => rpn_mpi_cube_exchange, rpn_mpi_cube_exchange_r4
   end type
 
-!   type :: cube_topology_old
-!     type(comm_size_rank) :: cube_comm = MPI_COMM_SIZE_RANK_NULL ! cube_comm%size == side_comm%size * 6 OR ELSE !!
-!     integer :: side                                             ! my side
-!     type(comm_size_rank) :: side_comm = MPI_COMM_SIZE_RANK_NULL ! side_comm%size == row_comm%size * col_comm%size OR ELSE !!
-!     integer :: row                                              ! my row
-!     type(comm_size_rank) :: row_comm = MPI_COMM_SIZE_RANK_NULL  ! row_comm%size == col_comm%size OR ELSE !!
-!     integer :: column                                           ! my column
-!     type(comm_size_rank) :: col_comm = MPI_COMM_SIZE_RANK_NULL  ! row_comm%size == col_comm%size OR ELSE !!
-!     type(neighbor) :: north = NEIGHBOR_NULL                     ! north neighbor
-!     type(neighbor) :: south = NEIGHBOR_NULL                     ! south neighbor
-!     type(neighbor) :: east = NEIGHBOR_NULL                      ! east neighbor
-!     type(neighbor) :: west = NEIGHBOR_NULL                      ! west neighbor
-!   end type
-
   integer, parameter :: NORTH_EDGE = 1   ! these constants are used for the edges array
   integer, parameter :: SOUTH_EDGE = 2
   integer, parameter :: EAST_EDGE  = 3
   integer, parameter :: WEST_EDGE  = 4
+  integer, parameter :: HALO_MAX   = 9   ! largest halo along x and y by default
 
   contains
 
-subroutine rpn_mpi_set_grid_topology(grid, csr, npex, npey, options)
+subroutine rpn_mpi_setup_halo_int(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
   use ISO_C_BINDING
   implicit none
-  class(grid_topology), intent(OUT) :: grid    ! cube topology
-  integer, intent(IN) :: npex, npey
+  class(grid_with_halo), intent(INOUT) :: grid    ! grid with halo topology
+  type(grid_mpi_comm), intent(IN) :: grid_src
+  integer, intent(IN) :: gnx, gny, maxhalox, maxhaloy
   integer, intent(IN) :: options
-  type(comm_size_rank), intent(IN) :: csr
 
+  grid%grid_comm = grid_src%grid_comm
+
+end subroutine rpn_mpi_setup_halo_int
+
+subroutine rpn_mpi_setup_halo(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
+  use ISO_C_BINDING
+  implicit none
+  class(grid_with_halo), intent(INOUT) :: grid    ! grid with halo topology
+  type(grid_mpi_comm), intent(IN) :: grid_src
+  integer, intent(IN)           :: gnx, gny       ! global dimensions of grid
+  integer, intent(IN), optional :: maxhalox, maxhaloy
+  integer, intent(IN), optional :: options
+
+  integer :: hxm, hym, opt
+
+  hxm = HALO_MAX
+  if(present(maxhalox)) hxm = maxhalox
+  hym = HALO_MAX
+  if(present(maxhaloy)) hym = maxhaloy
+  opt = 0
+  if(present(options))  opt = options
+  call rpn_mpi_setup_halo_int(grid, grid_src, gnx, gny, hxm, hym, opt)
+
+end subroutine rpn_mpi_setup_halo
+
+subroutine rpn_mpi_set_grid_topology_int(grid, gridcom, npex, npey, options)
+  use ISO_C_BINDING
+  implicit none
+  class(grid_mpi_comm), intent(INOUT) :: grid    ! cube topology
+  type(comm_size_rank), intent(IN), optional :: gridcom   ! communicator that will accomodate grid
+  integer, intent(IN) :: npex, npey
+  integer, intent(IN), optional :: options
+  
+
+end subroutine rpn_mpi_set_grid_topology_int
+
+subroutine rpn_mpi_set_grid_topology(grid, gridcom, npex, npey, gnx, gny, maxhalox, maxhaloy, options)
+  use ISO_C_BINDING
+  implicit none
+  class(grid_mpi_comm), intent(INOUT) :: grid    ! grid topology
+  integer, intent(IN) :: npex, npey
+  integer, intent(IN), optional :: gnx, gny, maxhalox, maxhaloy
+  integer, intent(IN), optional :: options
+  type(comm_size_rank), intent(IN), optional :: gridcom   ! communicator that will accomodate grid
+
+  integer :: opt
+
+  opt = 0
+  if(present(options)) opt = options
+
+  select type(g => grid)
+    type is(grid_mpi_comm)    ! base type, initialize from number of PEs
+      print *, 'initializing an entity of type grid_mpi_comm'
+      call rpn_mpi_set_grid_topology_int(g, gridcom, npex, npey, opt)
+    type is(grid_with_halo)
+      print *, 'initializing an entity of type grid_with_halo'
+      if(grid%grid_comm%comm == MPI_COMM_NULL) then
+        print *,'OOPS: uninitialized base type in grid_with_halo'
+      else
+        call rpn_mpi_setup_halo(g, grid, npex, npey, opt)
+      endif
+  end select
+    
 end subroutine rpn_mpi_set_grid_topology
+
+
+!  shape of array with "halo"  (2 D representation, same on all levels)
+!
+!  +=======================================================================================+___maxy
+!  I       <halox>                            extra                          <halox>       I
+!  I +-----+-----------------------------------------------------------------------+-----+ I
+!  I :     :                                    |                                  :     : I
+!  I :"cTL":               "iTLCR"            haloy                                :"cTR": I
+!  I :     :                                    |                                  :     : I
+!  I +-----+=====+===========================================================+=====+-----: I___nj
+!  I :     I     :                              |                            :     I     : I
+!  I :"iTL"I" TL":            "TC"            haloy                          :"TR "I"iTR": I
+!  I :     I     :                     inner    |    halo                    :     I     : I
+!  I :-----+-----+-----------------------------------------------------------+-----+-----: I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I  j
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I  s
+!  I :     I     :                                                           :     I     : I  u
+!  I :"iCL"I" CL":                   P R I V A T E   A R E A                 :"CR "I"iCR": I  b
+!  I :     I     :                                                           :     I     : I  s
+!  I :     I     :                                                           :     I     : I  c
+!  I :     I     :                                                           :     I     : I  r
+!  I :     I     :                                                           :     I     : I  i
+!  I :     I     :                                                           :     I     : I  p
+!  I :     I     :                                                           :     I     : I  t
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :     I     :                                                           :     I     : I
+!  I :-----+-----+-----------------------------------------------------------+-----+-----: I
+!  I :     I     :                              |                            :     I     : I
+!  I :"iBL"I" BL":            "BC"            haloy                          :"BR "I"iBR": I
+!  I :     I     :                              |                            :     I     : I
+!  I +-----+=====+===========================================================+=====+-----: I___1
+!  I :     :                                    |                                  :     : I
+!  I :"cBL":               "iBLCR"            haloy                                :"cBR": I
+!  I :     :                           outer    |   halo                           :     : I
+!  I +-----+-----------------------------------------------------------------------+-----+ I
+!  I <halox>                                                                       <halox> I
+!  +=======================================================================================+___miny
+!  |       |                                                                       |       |
+!  |       |                                                                       |       |
+!  |       1                               i subscript                             ni      |
+!  minx                                                                                 maxx
+!
+!  Array dimensions (2D) :  Z( mini:minj        , minj:maxj )
+!  Local area            :  Z( 1:ni , 1:nj )
+!  Private area          :  Z( halox:ni+1-halox , haloy:nj+1-haloy )
+!  Inner halo            :  Local area - Private area           [ TL + TC + TR + CR + BR + BC + BL + CL ]
+!  Outer halo            :  Z( 1-halox:ni+halox , 1-haloy:nj+haloy ) - Local area    [iXX + iXXXX + cXX ]
 
 subroutine rpn_mpi_grid_exchange_r4(grid, z, halo_x, haloy, mini, maxi, minj, maxj, nk)
   implicit none
-  class(grid_topology), intent(IN) :: grid    ! grid topology
+  class(grid_mpi_comm), intent(IN) :: grid    ! grid topology
   integer, intent(IN) :: halo_x, haloy
   integer, intent(IN) :: mini, maxi, minj, maxj, nk
   real, intent(INOUT), dimension(mini:maxi, minj:maxj, nk) :: z
@@ -107,16 +228,17 @@ end subroutine rpn_mpi_grid_exchange_r4
 
 subroutine rpn_mpi_grid_exchange(grid, z, halo_x, haloy, mini, maxi, minj, maxj, nk)
   implicit none
-  class(grid_topology), intent(IN) :: grid    ! grid topology
+  class(grid_mpi_comm), intent(IN) :: grid    ! grid topology
   integer, intent(IN) :: halo_x, haloy
   integer, intent(IN) :: mini, maxi, minj, maxj, nk
   integer, intent(INOUT), dimension(mini:maxi, minj:maxj, nk) :: z
   
 end subroutine rpn_mpi_grid_exchange
 
+! version for 32 bit reals
 subroutine rpn_mpi_cube_exchange_r4(cube, edges_s, edges_r, nv, lnij, nk)
   implicit none
-  class(cube_topology), intent(IN) :: cube    ! cube topology
+  class(cube_mpi_comm), intent(IN) :: cube    ! cube topology
   integer, intent(IN) :: nv, lnij, nk
   real, dimension(nv, lnij, nk, 4), intent(IN), target  :: edges_s
   real, dimension(nv, lnij, nk, 4), intent(OUT), target :: edges_r
@@ -133,12 +255,33 @@ subroutine rpn_mpi_cube_exchange_r4(cube, edges_s, edges_r, nv, lnij, nk)
   
 end subroutine rpn_mpi_cube_exchange_r4
 
+function compare_edges(edge_1, edge_2, nv, lnij, nk) result(diff)
+  implicit none
+  integer, intent(IN) :: nv, lnij, nk
+  integer, dimension(nv, lnij, nk, 4), intent(IN)   :: edge_1, edge_2
+  integer :: diff
+  integer :: i, j, k, l
+
+  diff = 0
+  do l = 1, 4
+  do k = 1, nk
+  do j = 1, lnij
+  do i = 1, nv
+    if(edge_1(i,j,k,l) .ne. edge_2(i,j,k,l)) diff = diff + 1
+  enddo
+  enddo
+  enddo
+  enddo
+  print *, diff,' differences out of',nv*lnij*nk*4
+end function compare_edges
+
 ! in a cube
 ! send edges_s to appropriate neighbor (north, south, east, west)
 ! get edges_r from appropriate neighbor (north, south, east, west)
+! version for 32 bit integers
 subroutine rpn_mpi_cube_exchange(cube, edges_s, edges_r, nv, lnij, nk)
   implicit none
-  class(cube_topology), intent(IN) :: cube    ! cube topology
+  class(cube_mpi_comm), intent(IN) :: cube    ! cube topology
   integer, intent(IN) :: nv       ! number of elements in each edge cell
   integer, intent(IN) :: lnij     ! length of the edge
   integer, intent(IN) :: nk       ! number of vertical levels
@@ -192,29 +335,8 @@ subroutine rpn_mpi_cube_exchange(cube, edges_s, edges_r, nv, lnij, nk)
   ! MPI_Waitall(count, array_of_requests, array_of_statuses)
   call MPI_Waitall(4, request_r, status_r)
   call MPI_Waitall(4, request_s, status_s)
-  count = compare_edges(edges_s, edges_r, nv, lnij, nk)   ! for test case only (nv expected to be 3)
-  print *,'Edges exchanged, errors =', count
 
   contains
-  function compare_edges(edge_1, edge_2, nv, lnij, nk) result(diff)
-    implicit none
-    integer, intent(IN) :: nv, lnij, nk
-    integer, dimension(nv, lnij, nk, 4), intent(IN)   :: edge_1, edge_2
-    integer :: diff
-    integer :: i, j, k, l
-
-    diff = 0
-    do l = 1, 4
-    do k = 1, nk
-    do j = 1, lnij
-    do i = 1, nv
-      if(edge_1(i,j,k,l) .ne. edge_2(i,j,k,l)) diff = diff + 1
-    enddo
-    enddo
-    enddo
-    enddo
-    print *, diff,' differences out of',nv*lnij*nk*4
-  end function compare_edges
   subroutine flip_edge(edge_i, edge_o, nv, lnij, nk) ! flip an edge along lnij
     implicit none
     integer, intent(IN) :: nv, lnij, nk
@@ -228,7 +350,7 @@ end subroutine rpn_mpi_cube_exchange
 subroutine rpn_mpi_set_cube_topology(cube, csr, npe)
   use ISO_C_BINDING
   implicit none
-  class(cube_topology), intent(OUT) :: cube    ! cube topology
+  class(cube_mpi_comm), intent(OUT) :: cube    ! cube topology
   type(comm_size_rank), intent(IN) :: csr     ! communicator large enough for the npe x npe x 6 cube
   integer, intent(IN) :: npe                  ! each side of the cube will use npe x npe PEs
 
@@ -420,13 +542,16 @@ program test
   use rpn_mpi_types_mod
   implicit none
   integer :: npe
-  type(cube_topology) :: cube
+  type(cube_mpi_comm) :: cube
+  type(grid_mpi_comm ) :: gt
+  type(grid_with_halo) :: gh
   type(comm_size_rank) :: csr
   integer, parameter :: LNIJ = 9
   integer, parameter :: XYZ = 3
   integer, parameter :: NK = 3
   integer,  dimension(XYZ, LNIJ, NK, 4) :: edges_s  ! edges to send
   integer,  dimension(XYZ, LNIJ, NK, 4) :: edges_r  ! edges to receive
+  integer :: count
 
   call mpi_init()
   csr%comm = MPI_COMM_WORLD
@@ -434,12 +559,17 @@ program test
   call mpi_comm_rank(csr%comm, csr%rank)
   npe = nint(sqrt(csr%size/6*1.0))               ! each side will use npe x npe PEs
 
+  call gh%setup(csr, npe, npe, 0)                ! syntax check only for the time being
+  call gt%setup(csr, npe, npe, 0)                ! syntax check only for the time being
+
   call rpn_mpi_set_cube_topology(cube, csr, npe) ! setup of cube topology data
   print *,'PE',csr%rank+1,' of',csr%size, ', side/row/col =',cube%my_side,cube%side%my_column,cube%side%my_row
 
 !      test_edges_create(side,      nv,  lnij, nk, pei,         pej,      npe, edges)
   call test_edges_create(cube%my_side, XYZ, LNIJ, NK, cube%side%my_column, cube%side%my_row, npe, edges_s) ! create edges to send
   call rpn_mpi_cube_exchange(cube, edges_s, edges_r, XYZ, LNIJ, NK)
+  count = compare_edges(edges_s, edges_r, XYZ, LNIJ, NK)   ! for test case only (nv expected to be 3)
+  print *,'Edges exchanged, errors =', count
 
   call mpi_finalize
 end program
