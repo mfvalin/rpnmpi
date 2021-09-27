@@ -21,6 +21,8 @@ module rpn_mpi_types_mod
     type(MPI_Comm) :: comm = MPI_COMM_NULL
     integer(C_INT) :: size = -1
     integer(C_INT) :: rank = -1
+  contains
+    procedure, pass(csr) :: valid => rpn_mpi_valid_csr
   end type
   type(comm_size_rank), parameter :: MPI_COMM_SIZE_RANK_NULL = comm_size_rank(MPI_COMM_NULL, -1, -1)
 
@@ -38,25 +40,29 @@ module rpn_mpi_types_mod
     type(comm_size_rank) :: row = MPI_COMM_SIZE_RANK_NULL       ! row_comm%size == col_comm%size if it is a cube OR ELSE !!
     integer              :: my_column                           ! my column (0 -> my_row%size - 1
     type(comm_size_rank) :: column = MPI_COMM_SIZE_RANK_NULL    ! row_comm%size == col_comm%size if it is a cube OR ELSE !!
-    type(neighbor) :: north = NEIGHBOR_NULL                     ! north neighbor
-    type(neighbor) :: south = NEIGHBOR_NULL                     ! south neighbor
-    type(neighbor) :: east  = NEIGHBOR_NULL                     ! east neighbor
-    type(neighbor) :: west  = NEIGHBOR_NULL                     ! west neighbor
+    type(neighbor)       :: north = NEIGHBOR_NULL               ! north neighbor
+    type(neighbor)       :: south = NEIGHBOR_NULL               ! south neighbor
+    type(neighbor)       :: east  = NEIGHBOR_NULL               ! east neighbor
+    type(neighbor)       :: west  = NEIGHBOR_NULL               ! west neighbor
   contains
-    procedure, pass(grid) :: setup => rpn_mpi_set_grid_topology
+    procedure, pass(grid) :: rpn_mpi_copy_grid_topology
+    GENERIC               :: ASSIGNMENT(=) => rpn_mpi_copy_grid_topology
+    procedure, pass(grid) :: valid    => rpn_mpi_valid_grid_topology
+    procedure, pass(grid) :: init     => rpn_mpi_set_grid_topology
+    procedure, pass(grid) :: clone    => rpn_mpi_clone_grid_topology
     procedure, pass(grid) :: exchange => rpn_mpi_grid_exchange, rpn_mpi_grid_exchange_r4
   end type
 
   type, extends(grid_mpi_comm) :: grid_with_halo                ! grid point distribution (2D)
-    integer :: gnx = 0                                          ! global dimension of grid along i (user supplied)
-    integer :: gny = 0                                          ! global dimension of grid along j (user supplied)
+    integer :: gni = 0                                          ! global dimension of grid along i (user supplied)
+    integer :: gnj = 0                                          ! global dimension of grid along j (user supplied)
     integer :: ni0, nj0                                         ! lower left corner of local portion in the global grid (computed)
-    integer :: minx, maxx, miny, maxy                           ! dimension of local portion of the global grid (computed)
-    integer :: maxhalox = 0                                     ! max halo along i (may be different from maxhaloy) (user supplied)
-    integer :: maxhaloy = 0                                     ! max halo along j (may be different from maxhalox) (user supplied)
+    integer :: mini, maxi, minj, maxj                           ! dimension of local portion of the global grid (computed)
+    integer :: maxhaloi = 0                                     ! max halo along i (may be different from maxhaloy) (user supplied)
+    integer :: maxhaloj = 0                                     ! max halo along j (may be different from maxhalox) (user supplied)
     integer :: disttype = 0                                     ! type of grid distribution (user supplied)
   contains
-    procedure, pass(grid) :: setup_halo => rpn_mpi_setup_halo
+    procedure, pass(grid) :: distribute => rpn_mpi_distribute_grid
 !     procedure split                    ! split grid across processors
 !     procedure exchange
   end type
@@ -76,11 +82,104 @@ module rpn_mpi_types_mod
   integer, parameter :: SOUTH_EDGE = 2
   integer, parameter :: EAST_EDGE  = 3
   integer, parameter :: WEST_EDGE  = 4
-  integer, parameter :: HALO_MAX   = 9   ! largest halo along x and y by default
 
+  integer, parameter :: HALO_MAX   = 9   ! largest halo along x and y by default
+  integer, parameter :: DISTRIBUTE_STRICT = 0
+  integer, parameter :: DISTRIBUTE_SPREAD = 1
+
+  private :: rpn_mpi_valid_grid_topology, rpn_mpi_valid_csr, rpn_mpi_copy_grid_topology
   contains
 
-subroutine rpn_mpi_setup_halo_int(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
+! is this csr properly initialized ?
+function rpn_mpi_valid_csr(csr) result(valid)
+  use ISO_C_BINDING
+  implicit none
+  class(comm_size_rank), intent(IN) :: csr
+  logical :: valid
+
+  valid = csr%comm .ne. MPI_COMM_NULL .and. csr%size > 0 .and. csr%rank < csr%size .and. csr%rank >= 0
+end function rpn_mpi_valid_csr
+
+! is this grid properly initialized ?
+function rpn_mpi_valid_grid_topology(grid) result(valid)
+  use ISO_C_BINDING
+  implicit none
+  class(grid_mpi_comm), intent(IN) :: grid      ! grid topology
+  logical :: valid
+
+  valid = &
+  grid%grid_comm%valid()  .and. &
+  grid%my_row >=  0       .and. &
+  grid%row%valid()        .and. &
+  grid%my_column >=  0    .and. &
+  grid%column%valid() 
+
+end function rpn_mpi_valid_grid_topology
+
+! copy operator for grid_mpi_comm and grid_with_halo
+subroutine rpn_mpi_copy_grid_topology(grid, grid_src)
+  use ISO_C_BINDING
+  implicit none
+  class(grid_mpi_comm), intent(INOUT) :: grid      ! grid topology
+  class(grid_mpi_comm), intent(IN )   :: grid_src  ! grid topology to clone
+! character(len=128) :: message
+  grid%grid_comm = grid_src%grid_comm   ! copy all elements from the base type
+  grid%my_row    = grid_src%my_row
+  grid%row       = grid_src%row
+  grid%my_column = grid_src%my_column
+  grid%column    = grid_src%column
+  grid%north     = grid_src%north
+  grid%south     = grid_src%south
+  grid%east      = grid_src%east
+  grid%west      = grid_src%west
+! message='copy'
+  select type(gsrc => grid_src)
+    type is(grid_mpi_comm)                  ! src is grid_mpi_comm, nothing more to copy
+! message=trim(message)//', from grid_mpi_comm'
+!       select type(gdst => grid)
+!         type is(grid_mpi_comm)
+! message=trim(message)//', to grid_mpi_comm'
+!         type is(grid_with_halo)
+! message=trim(message)//', to grid_with_halo'
+!       end select
+    type is(grid_with_halo)                  ! src is grid_with_halo, maybe something more to copy
+! message=trim(message)//', from grid_with_halo'
+      select type(gdst => grid)
+        type is(grid_with_halo)              ! dst is grid_with_halo, copy extra from source
+! message=trim(message)//', to grid_with_halo'
+          gdst%gni = gsrc%gni
+          gdst%gnj = gsrc%gnj
+          gdst%ni0 = gsrc%ni0
+          gdst%nj0 = gsrc%nj0
+          gdst%mini = gsrc%mini
+          gdst%maxi = gsrc%maxi
+          gdst%minj = gsrc%minj
+          gdst%maxj = gsrc%maxj
+          gdst%maxhaloi = gsrc%maxhaloi
+          gdst%maxhaloj = gsrc%maxhaloj
+          gdst%disttype = gsrc%disttype
+        type is(grid_mpi_comm)               ! dst is grid_mpi_comm, nothing more to copy
+! message=trim(message)//', to grid_mpi_comm'
+      end select
+  end select
+! print *,trim(message)
+end subroutine rpn_mpi_copy_grid_topology
+
+! clone an existing grid
+function rpn_mpi_clone_grid_topology(grid, grid_src) result(status)
+  use ISO_C_BINDING
+  implicit none
+  class(grid_mpi_comm), intent(INOUT) :: grid      ! grid topology
+  class(grid_mpi_comm), intent(IN )   :: grid_src  ! grid topology to clone
+  integer                             :: status
+
+  status = -1
+  if( .not. grid_src%valid() ) return   ! gridsrc not properly initialized
+  grid = grid_src
+  status = 0
+end function rpn_mpi_clone_grid_topology
+
+subroutine rpn_mpi_distribute_grid_int(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
   use ISO_C_BINDING
   implicit none
   class(grid_with_halo), intent(INOUT) :: grid    ! grid with halo topology
@@ -90,9 +189,9 @@ subroutine rpn_mpi_setup_halo_int(grid, grid_src, gnx, gny, maxhalox, maxhaloy, 
 
   grid%grid_comm = grid_src%grid_comm
 
-end subroutine rpn_mpi_setup_halo_int
+end subroutine rpn_mpi_distribute_grid_int
 
-subroutine rpn_mpi_setup_halo(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
+subroutine rpn_mpi_distribute_grid(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
   use ISO_C_BINDING
   implicit none
   class(grid_with_halo), intent(INOUT) :: grid    ! grid with halo topology
@@ -109,9 +208,9 @@ subroutine rpn_mpi_setup_halo(grid, grid_src, gnx, gny, maxhalox, maxhaloy, opti
   if(present(maxhaloy)) hym = maxhaloy
   opt = 0
   if(present(options))  opt = options
-  call rpn_mpi_setup_halo_int(grid, grid_src, gnx, gny, hxm, hym, opt)
+  call rpn_mpi_distribute_grid_int(grid, grid_src, gnx, gny, hxm, hym, opt)
 
-end subroutine rpn_mpi_setup_halo
+end subroutine rpn_mpi_distribute_grid
 
 subroutine rpn_mpi_set_grid_topology_int(grid, gridcom, npex, npey, options)
   use ISO_C_BINDING
@@ -124,34 +223,49 @@ subroutine rpn_mpi_set_grid_topology_int(grid, gridcom, npex, npey, options)
 
 end subroutine rpn_mpi_set_grid_topology_int
 
-subroutine rpn_mpi_set_grid_topology(grid, gridcom, npex, npey, gnx, gny, maxhalox, maxhaloy, options)
+function rpn_mpi_set_grid_topology(grid, gridcom, npex, npey, options) result(status)
   use ISO_C_BINDING
   implicit none
-  class(grid_mpi_comm), intent(INOUT) :: grid    ! grid topology
-  integer, intent(IN) :: npex, npey
-  integer, intent(IN), optional :: gnx, gny, maxhalox, maxhaloy
-  integer, intent(IN), optional :: options
-  type(comm_size_rank), intent(IN), optional :: gridcom   ! communicator that will accomodate grid
+  class(grid_mpi_comm), intent(INOUT) :: grid      ! grid topology
+  type(comm_size_rank), intent(IN)    :: gridcom   ! communicator that will accomodate grid
+  integer, intent(IN)                 :: npex, npey
+  integer, intent(IN), optional       :: options
+  integer                             :: status
 
   integer :: opt
 
+  status = -1
+  if(grid%grid_comm%comm .ne. MPI_COMM_NULL) return   ! setup already done
+  status = -2
+  if(grid%grid_comm%rank < npex * npey) return        ! not enough processes in communicator
   opt = 0
   if(present(options)) opt = options
+  
 
-  select type(g => grid)
-    type is(grid_mpi_comm)    ! base type, initialize from number of PEs
-      print *, 'initializing an entity of type grid_mpi_comm'
-      call rpn_mpi_set_grid_topology_int(g, gridcom, npex, npey, opt)
-    type is(grid_with_halo)
-      print *, 'initializing an entity of type grid_with_halo'
-      if(grid%grid_comm%comm == MPI_COMM_NULL) then
-        print *,'OOPS: uninitialized base type in grid_with_halo'
-      else
-        call rpn_mpi_setup_halo(g, grid, npex, npey, opt)
-      endif
-  end select
-    
-end subroutine rpn_mpi_set_grid_topology
+!   select type(g => grid)
+!     type is(grid_mpi_comm)    ! base type, initialize from number of PEs
+!       print *, 'initializing an entity of type grid_mpi_comm'
+!       call rpn_mpi_set_grid_topology_int(g, gridcom, npex, npey, opt)
+!     type is(grid_with_halo)
+!       print *, 'initializing an entity of type grid_with_halo'
+!       if(grid%grid_comm%comm == MPI_COMM_NULL) then
+!         print *,'OOPS: uninitialized base type in grid_with_halo'
+!       else
+!         call rpn_mpi_setup_halo(g, grid, npex, npey, opt)
+!       endif
+!   end select
+!   grid%grid_comm =
+!   grid%my_row    =
+!   grid%row       =
+!   grid%my_column =
+!   grid%column    =
+!   grid%north     =
+!   grid%south     =
+!   grid%east      =
+!   grid%west      =
+
+    status = 0
+end function rpn_mpi_set_grid_topology
 
 
 !  shape of array with "halo"  (2 D representation, same on all levels)
@@ -544,14 +658,14 @@ program test
   integer :: npe
   type(cube_mpi_comm) :: cube
   type(grid_mpi_comm ) :: gt
-  type(grid_with_halo) :: gh
+  type(grid_with_halo) :: gh, gh2
   type(comm_size_rank) :: csr
   integer, parameter :: LNIJ = 9
   integer, parameter :: XYZ = 3
   integer, parameter :: NK = 3
   integer,  dimension(XYZ, LNIJ, NK, 4) :: edges_s  ! edges to send
   integer,  dimension(XYZ, LNIJ, NK, 4) :: edges_r  ! edges to receive
-  integer :: count
+  integer :: count, status
 
   call mpi_init()
   csr%comm = MPI_COMM_WORLD
@@ -559,8 +673,16 @@ program test
   call mpi_comm_rank(csr%comm, csr%rank)
   npe = nint(sqrt(csr%size/6*1.0))               ! each side will use npe x npe PEs
 
-  call gh%setup(csr, npe, npe, 0)                ! syntax check only for the time being
-  call gt%setup(csr, npe, npe, 0)                ! syntax check only for the time being
+  if(csr%rank == 0) then
+    status = gh%init(csr, npe, npe, 0)                ! syntax check only for the time being
+    status = gt%init(csr, npe, npe, 0)                ! syntax check only for the time being
+    status = gh%clone(gt)                             ! syntax check only for the time being
+    status = gt%clone(gh)                             ! syntax check only for the time being
+    gt = gh                                           ! syntax check only for the time being
+    gh = gt                                           ! syntax check only for the time being
+    gh2 = gh
+    print *,'valid(gt), valid(gh)', gt%valid(), gh%valid()
+  endif
 
   call rpn_mpi_set_cube_topology(cube, csr, npe) ! setup of cube topology data
   print *,'PE',csr%rank+1,' of',csr%size, ', side/row/col =',cube%my_side,cube%side%my_column,cube%side%my_row
