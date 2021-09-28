@@ -12,7 +12,7 @@
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ! Lesser General Public License for more details.
 
-module rpn_mpi_types_mod
+module rpn_mpi_grid_types_mod
   use ISO_C_BINDING
   use mpi_f08
   implicit none
@@ -30,15 +30,16 @@ module rpn_mpi_types_mod
     type(MPI_Comm) :: comm = MPI_COMM_NULL   ! communicator to reach neighbor
     integer(C_INT) :: rank = -1              ! rank of neighbor in communicator
     integer(C_INT) :: side = -1              ! neighbor side (if same side as my PE, +10 if on my column, +20 if on my row) 
+                                             ! if not in a cube structure, expected to be -1
     logical :: flip = .false.                ! true if a flip (reversal) along the edge is required before sending to neighbor
   end type
   type(neighbor), parameter :: NEIGHBOR_NULL = neighbor(MPI_COMM_NULL, -1, -1, .false.)
 
   type :: grid_mpi_comm                                         ! basic distributed grid communication setup
     type(comm_size_rank) :: grid_comm = MPI_COMM_SIZE_RANK_NULL ! grid_comm%size == row_comm%size * col_comm%size OR ELSE !!
-    integer              :: my_row                              ! my row (0 -> my_column%size - 1 )
+    integer              :: my_row = -1                         ! my row (0 -> my_column%size - 1 )
     type(comm_size_rank) :: row = MPI_COMM_SIZE_RANK_NULL       ! row_comm%size == col_comm%size if it is a cube OR ELSE !!
-    integer              :: my_column                           ! my column (0 -> my_row%size - 1
+    integer              :: my_column = -1                      ! my column (0 -> my_row%size - 1
     type(comm_size_rank) :: column = MPI_COMM_SIZE_RANK_NULL    ! row_comm%size == col_comm%size if it is a cube OR ELSE !!
     type(neighbor)       :: north = NEIGHBOR_NULL               ! north neighbor
     type(neighbor)       :: south = NEIGHBOR_NULL               ! south neighbor
@@ -51,6 +52,7 @@ module rpn_mpi_types_mod
     procedure, pass(grid) :: init     => rpn_mpi_set_grid_topology
     procedure, pass(grid) :: clone    => rpn_mpi_clone_grid_topology
     procedure, pass(grid) :: exchange => rpn_mpi_grid_exchange, rpn_mpi_grid_exchange_r4
+    procedure, pass(grid) :: print    => rpn_mpi_grid_print_info
   end type
 
   type, extends(grid_mpi_comm) :: grid_with_halo                ! grid point distribution (2D)
@@ -78,17 +80,30 @@ module rpn_mpi_types_mod
     procedure, pass(cube) :: exchange => rpn_mpi_cube_exchange, rpn_mpi_cube_exchange_r4
   end type
 
-  integer, parameter :: NORTH_EDGE = 1   ! these constants are used for the edges array
+  integer, parameter :: NORTH_EDGE = 1           ! these constants are used for the edges array
   integer, parameter :: SOUTH_EDGE = 2
   integer, parameter :: EAST_EDGE  = 3
   integer, parameter :: WEST_EDGE  = 4
 
-  integer, parameter :: HALO_MAX   = 9   ! largest halo along x and y by default
-  integer, parameter :: DISTRIBUTE_STRICT = 0
-  integer, parameter :: DISTRIBUTE_SPREAD = 1
+  integer, parameter :: HALO_MAX   = 9           !  largest halo along x and y by default
+  integer, parameter :: DISTRIBUTE_STRICT  = 0   !  n, n, .... , n, <n  (last MAY NOT be zero)
+  integer, parameter :: DISTRIBUTE_RELAXED = 1   !  n, n, ... , n , n-1, n-1, ..., n-1 (n-1 MAY NOT be zero)
+  integer, parameter :: DISTRIBUTE_SPREAD  = 2   !  n, n, ... , n , n-1, n-1, ..., n-1 (n-1 may be zero)
+  integer, parameter :: GRID_Y_FIRST = 33554432  !  allocate processes along X first
+  integer, parameter :: GRID_X_FIRST = 67108864  !  allocate processes along y first
+  integer, parameter :: GRID_BLOCKED = 16777216  !  allocate grid in blocks (up to 256 x 256)
 
   private :: rpn_mpi_valid_grid_topology, rpn_mpi_valid_csr, rpn_mpi_copy_grid_topology
   contains
+
+subroutine rpn_mpi_grid_print_info(grid)
+  use ISO_C_BINDING
+  implicit none
+  class(grid_mpi_comm), intent(IN) :: grid      ! grid topology
+
+  print 1,'rank, column, row = ',grid%grid_comm%rank, grid%my_row, grid%my_column
+1 format(A,10I4)
+end subroutine rpn_mpi_grid_print_info
 
 ! is this csr properly initialized ?
 function rpn_mpi_valid_csr(csr) result(valid)
@@ -223,6 +238,12 @@ subroutine rpn_mpi_set_grid_topology_int(grid, gridcom, npex, npey, options)
 
 end subroutine rpn_mpi_set_grid_topology_int
 
+! establish grip PE topology
+! if gridcom has more PEs than necessary, excess PEs will receive a null grid communicator
+! grid     : grid layout to be initialized
+! npex     : number of PEs along X
+! npey     : number of PEs along Y
+! options  : none so far, should be 0
 function rpn_mpi_set_grid_topology(grid, gridcom, npex, npey, options) result(status)
   use ISO_C_BINDING
   implicit none
@@ -232,39 +253,71 @@ function rpn_mpi_set_grid_topology(grid, gridcom, npex, npey, options) result(st
   integer, intent(IN), optional       :: options
   integer                             :: status
 
-  integer :: opt
+  integer :: opt, ingrid, blkx, blky
 
-  status = -1
-  if(grid%grid_comm%comm .ne. MPI_COMM_NULL) return   ! setup already done
-  status = -2
-  if(grid%grid_comm%rank < npex * npey) return        ! not enough processes in communicator
+  status = -1111
+  if(grid%grid_comm%comm .ne. MPI_COMM_NULL) return   ! ERROR, grid layout setup already done
+
+  grid%grid_comm = MPI_COMM_SIZE_RANK_NULL            ! set NULL grid layout
+  status = -2222
+  if(gridcom%size < npex * npey) return               ! ERROR, not enough processes in supplied communicator
+
   opt = 0
   if(present(options)) opt = options
-  
+  ingrid = 0
+  if(gridcom%rank < npex * npey) ingrid = 1
+  call MPI_Comm_split(gridcom%comm, ingrid, gridcom%rank, grid%grid_comm%comm) ! split communicator into in grid and not in grid
+  status = -1
+  if(ingrid == 0) then   ! PE not in grid, rank is too high
+    status = -1
+    return
+  endif
+  call MPI_Comm_size(grid%grid_comm%comm, grid%grid_comm%size)  ! size of grid
+  call MPI_Comm_rank(grid%grid_comm%comm, grid%grid_comm%rank)  ! rank -n grid
 
-!   select type(g => grid)
-!     type is(grid_mpi_comm)    ! base type, initialize from number of PEs
-!       print *, 'initializing an entity of type grid_mpi_comm'
-!       call rpn_mpi_set_grid_topology_int(g, gridcom, npex, npey, opt)
-!     type is(grid_with_halo)
-!       print *, 'initializing an entity of type grid_with_halo'
-!       if(grid%grid_comm%comm == MPI_COMM_NULL) then
-!         print *,'OOPS: uninitialized base type in grid_with_halo'
-!       else
-!         call rpn_mpi_setup_halo(g, grid, npex, npey, opt)
-!       endif
-!   end select
-!   grid%grid_comm =
-!   grid%my_row    =
-!   grid%row       =
-!   grid%my_column =
-!   grid%column    =
-!   grid%north     =
-!   grid%south     =
-!   grid%east      =
-!   grid%west      =
+  if(and(opt,GRID_Y_FIRST) == GRID_Y_FIRST) then                       ! Y first distribution
+    grid%my_row    = mod(grid%grid_comm%rank, npey)
+    grid%my_column = grid%grid_comm%rank / npey
+  else if(and(opt,GRID_BLOCKED) == GRID_BLOCKED) then                  ! block distribution (blkx,blky) (deferred implementation)
+    grid%my_row    = grid%grid_comm%rank / npex                        ! (same as X first for now)
+    grid%my_column = mod(grid%grid_comm%rank, npex)
+    blkx = and(255, ishft(opt, -8) )                                   ! bits 8 - 15
+    blky = and(255, opt            )                                   ! bits 0-   7 (lower 8 bits)
+  else if(and(opt,GRID_X_FIRST) == GRID_X_FIRST) then                  ! X first distribution
+    grid%my_row    = grid%grid_comm%rank / npex
+    grid%my_column = mod(grid%grid_comm%rank, npex)
+  else                                                                 ! X first by default
+    grid%my_row    = grid%grid_comm%rank / npex
+    grid%my_column = mod(grid%grid_comm%rank, npex)
+  endif
 
-    status = 0
+  call MPI_Comm_split(grid%grid_comm%comm, grid%my_row, grid%grid_comm%rank, grid%row%comm)        ! split grid into rows
+  call MPI_Comm_size(grid%row%comm, grid%row%size)
+  call MPI_Comm_rank(grid%row%comm, grid%row%rank)
+
+  call MPI_Comm_split(grid%grid_comm%comm, grid%my_column, grid%grid_comm%rank, grid%column%comm)  ! split grid into columns
+  call MPI_Comm_size(grid%column%comm, grid%column%size)
+  call MPI_Comm_rank(grid%column%comm, grid%column%rank)
+
+  grid%north = NEIGHBOR_NULL
+  grid%south = NEIGHBOR_NULL
+  grid%east  = NEIGHBOR_NULL
+  grid%west  = NEIGHBOR_NULL
+  ! not in a cube layout, flip is always false, side is always 0
+  if(grid%my_row    .ne. npey - 1) then  ! not north row, PE above in column is the north neighbor
+    grid%north = neighbor(grid%column%comm, grid%column%rank + 1, 0, .false.)
+  endif
+  if(grid%my_row    .ne. 0      )  then  ! not south row, PE below in column is the south neighbor
+    grid%south = neighbor(grid%column%comm, grid%column%rank - 1, 0, .false.)
+  endif
+  if(grid%my_column .ne. npex - 1) then  ! not east column, PE to the left in row is the east neighbor
+    grid%east  = neighbor(grid%row%comm,    grid%row%rank + 1,    0, .false.)
+  endif
+  if(grid%my_column .ne. 0       ) then  ! not west column, PE to the right in row is the west neighbor
+    grid%west  = neighbor(grid%row%comm,    grid%row%rank - 1,    0, .false.)
+  endif
+
+  status = 0  ! SUCCESS
 end function rpn_mpi_set_grid_topology
 
 
@@ -328,7 +381,7 @@ subroutine rpn_mpi_grid_exchange_r4(grid, z, halo_x, haloy, mini, maxi, minj, ma
   class(grid_mpi_comm), intent(IN) :: grid    ! grid topology
   integer, intent(IN) :: halo_x, haloy
   integer, intent(IN) :: mini, maxi, minj, maxj, nk
-  real, intent(INOUT), dimension(mini:maxi, minj:maxj, nk) :: z
+  real, intent(INOUT), dimension(mini:maxi, minj:maxj, nk), target :: z
   
   integer, dimension(:, :, :), pointer :: zi
   type(C_PTR) :: zip
@@ -653,7 +706,7 @@ end program
 #if defined(TEST_EXCHANGE)
 program test
   use ISO_C_BINDING
-  use rpn_mpi_types_mod
+  use rpn_mpi_grid_types_mod
   implicit none
   integer :: npe
   type(cube_mpi_comm) :: cube
@@ -673,7 +726,11 @@ program test
   call mpi_comm_rank(csr%comm, csr%rank)
   npe = nint(sqrt(csr%size/6*1.0))               ! each side will use npe x npe PEs
 
-  if(csr%rank == 0) then
+  status = gh%init(csr, 2, 2)
+  call gh%print()
+!   print *,'gh%init(csr, 2, 2) =',status
+
+  if(csr%rank == -1) then
     status = gh%init(csr, npe, npe, 0)                ! syntax check only for the time being
     status = gt%init(csr, npe, npe, 0)                ! syntax check only for the time being
     status = gh%clone(gt)                             ! syntax check only for the time being
@@ -687,11 +744,14 @@ program test
   call rpn_mpi_set_cube_topology(cube, csr, npe) ! setup of cube topology data
   print *,'PE',csr%rank+1,' of',csr%size, ', side/row/col =',cube%my_side,cube%side%my_column,cube%side%my_row
 
-!      test_edges_create(side,      nv,  lnij, nk, pei,         pej,      npe, edges)
-  call test_edges_create(cube%my_side, XYZ, LNIJ, NK, cube%side%my_column, cube%side%my_row, npe, edges_s) ! create edges to send
-  call rpn_mpi_cube_exchange(cube, edges_s, edges_r, XYZ, LNIJ, NK)
-  count = compare_edges(edges_s, edges_r, XYZ, LNIJ, NK)   ! for test case only (nv expected to be 3)
-  print *,'Edges exchanged, errors =', count
+  if(cube%cube_comm%comm .ne. MPI_COMM_NULL) then
+    call test_edges_create(cube%my_side, XYZ, LNIJ, NK, cube%side%my_column, cube%side%my_row, npe, edges_s) ! create edges to send
+    call rpn_mpi_cube_exchange(cube, edges_s, edges_r, XYZ, LNIJ, NK)
+    count = compare_edges(edges_s, edges_r, XYZ, LNIJ, NK)   ! for test case only (nv expected to be 3)
+    print *,'Edges exchanged, errors =', count
+  else
+    print *,'WARNING: PE rank',csr%rank,' is not in the cube'
+  endif
 
   call mpi_finalize
 end program
@@ -699,7 +759,7 @@ end program
 
 subroutine test_edges
   use ISO_C_BINDING
-  use rpn_mpi_types_mod
+  use rpn_mpi_grid_types_mod
   implicit none
   integer, parameter :: lnij = 5
   integer, parameter :: nv = 3
@@ -712,7 +772,7 @@ subroutine test_edges
   integer,  dimension(nv, lnij, nk, 4, 0:5, 0:np-1, 0:np-1) :: edges
 
   edges = 888
-  edgename = [ 'N ', 'S ', 'E ', 'W']
+  edgename = [ 'N ', 'S ', 'E ', 'W ']
   do j = 0, 5
     side = j
     print 2,'========== (',j,') =========='
@@ -758,7 +818,7 @@ end subroutine test_edges
 ! nk is the number of levels
 subroutine test_edges_create(side, nv, lnij, nk, pei, pej, npe, edges)
   use ISO_C_BINDING
-  use rpn_mpi_types_mod
+  use rpn_mpi_grid_types_mod
   implicit none
   integer, intent(IN) :: side
   integer, intent(IN) :: lnij
