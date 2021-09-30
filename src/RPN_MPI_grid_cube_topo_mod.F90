@@ -52,20 +52,24 @@ module rpn_mpi_grid_types_mod
     procedure, pass(grid) :: init     => rpn_mpi_set_grid_topology
     procedure, pass(grid) :: clone    => rpn_mpi_clone_grid_topology
     procedure, pass(grid) :: exchange => rpn_mpi_grid_exchange, rpn_mpi_grid_exchange_r4
-    procedure, pass(grid) :: print    => rpn_mpi_grid_print_info
+    procedure, pass(grid) :: print    => rpn_mpi_print_grid_info
   end type
 
   type, extends(grid_mpi_comm) :: grid_with_halo                ! grid point distribution (2D)
     integer :: gni = 0                                          ! global dimension of grid along i (user supplied)
     integer :: gnj = 0                                          ! global dimension of grid along j (user supplied)
     integer :: ni0, nj0                                         ! lower left corner of local portion in the global grid (computed)
-    integer :: mini, maxi, minj, maxj                           ! dimension of local portion of the global grid (computed)
+    integer :: mini, maxi, minj, maxj                           ! dimension of local portion of the global grid (computed, same on all PEs)
     integer :: maxhaloi = 0                                     ! max halo along i (may be different from maxhaloy) (user supplied)
     integer :: maxhaloj = 0                                     ! max halo along j (may be different from maxhalox) (user supplied)
     integer :: disttype = 0                                     ! type of grid distribution (user supplied)
+    integer :: sx0, sy0                                         ! size of first tile along each axis (west side and south side of grid)
+    integer :: ix1, iy1                                         ! position in grid of first tile size change (smaller tiles)
+    integer :: sx1, sy1                                         ! sx1 <= sx0, sy1 <= sy0 new tile size from ix1, iy1
+    integer :: nzx, nxy                                         ! number of zero size tiles (east side ant north side of grid)
   contains
     procedure, pass(grid) :: distribute => rpn_mpi_distribute_grid
-!     procedure split                    ! split grid across processors
+!     procedure split    =>  rpn_mpi_split_grid               ! split grid across processors
 !     procedure exchange
   end type
 
@@ -85,25 +89,39 @@ module rpn_mpi_grid_types_mod
   integer, parameter :: EAST_EDGE  = 3
   integer, parameter :: WEST_EDGE  = 4
 
-  integer, parameter :: HALO_MAX   = 9           !  largest halo along x and y by default
-  integer, parameter :: DISTRIBUTE_STRICT  = 0   !  n, n, .... , n, <n  (last MAY NOT be zero)
-  integer, parameter :: DISTRIBUTE_RELAXED = 1   !  n, n, ... , n , n-1, n-1, ..., n-1 (n-1 MAY NOT be zero)
-  integer, parameter :: DISTRIBUTE_SPREAD  = 2   !  n, n, ... , n , n-1, n-1, ..., n-1 (n-1 may be zero)
-  integer, parameter :: GRID_Y_FIRST = 33554432  !  allocate processes along X first
-  integer, parameter :: GRID_X_FIRST = 67108864  !  allocate processes along y first
+  integer, parameter :: HALO_MAX   = 9           !  largest halo along x and y if not specified by user
+
+  integer, parameter :: DISTRIBUTE_STRICT  = 0   !  n, n, .... , n, < n                (last MAY NOT be zero)
+  integer, parameter :: DISTRIBUTE_SMOOTH  = 1   !  n, n, ... , n , n-1, n-1, ..., n-1 ( n-1 MAY NOT be zero)
+  integer, parameter :: DISTRIBUTE_ZEROOK  = 2   !  zero length tile(s) may be found at the est or north side
+                                                 !  1, 1, ... , 1 , 0, 0, ..., 0 (SMOOTH with n == 1)
+                                                 !  e.g. 2 , 2, 2, 1, 0, 0 (7 spread over 6 in STRICT mode)
+
+  integer, parameter :: GRID_Y_FIRST = 33554432  !  allocate processes along X (west -> east) first
+  integer, parameter :: GRID_X_FIRST = 67108864  !  allocate processes along y (south -> north) first
   integer, parameter :: GRID_BLOCKED = 16777216  !  allocate grid in blocks (up to 256 x 256)
 
   private :: rpn_mpi_valid_grid_topology, rpn_mpi_valid_csr, rpn_mpi_copy_grid_topology
   contains
 
-subroutine rpn_mpi_grid_print_info(grid)
+! subroutine rpn_mpi_split_grid(grid, gni, gnj, options)
+!   use ISO_C_BINDING
+!   implicit none
+!   class(grid_with_halo), intent(IN) :: grid      ! grid topology
+!   integer, intent(IN), value :: gni, gnj
+! 
+!   print 1,'rank, column, row = ',grid%grid_comm%rank, grid%my_row, grid%my_column
+! 1 format(A,10I4)
+! end subroutine rpn_mpi_split_grid
+
+subroutine rpn_mpi_print_grid_info(grid)
   use ISO_C_BINDING
   implicit none
   class(grid_mpi_comm), intent(IN) :: grid      ! grid topology
 
   print 1,'rank, column, row = ',grid%grid_comm%rank, grid%my_row, grid%my_column
 1 format(A,10I4)
-end subroutine rpn_mpi_grid_print_info
+end subroutine rpn_mpi_print_grid_info
 
 ! is this csr properly initialized ?
 function rpn_mpi_valid_csr(csr) result(valid)
@@ -127,11 +145,13 @@ function rpn_mpi_valid_grid_topology(grid) result(valid)
   grid%my_row >=  0       .and. &
   grid%row%valid()        .and. &
   grid%my_column >=  0    .and. &
-  grid%column%valid() 
+  grid%column%valid()     .and. &
+  grid%grid_comm%size ==  grid%row%size * grid%column%size
 
 end function rpn_mpi_valid_grid_topology
 
 ! copy operator for grid_mpi_comm and grid_with_halo
+! used as = operator for class grid_mpi_comm
 subroutine rpn_mpi_copy_grid_topology(grid, grid_src)
   use ISO_C_BINDING
   implicit none
@@ -194,28 +214,34 @@ function rpn_mpi_clone_grid_topology(grid, grid_src) result(status)
   status = 0
 end function rpn_mpi_clone_grid_topology
 
-subroutine rpn_mpi_distribute_grid_int(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
+function rpn_mpi_distribute_grid_int(grid, gnx, gny, maxhalox, maxhaloy, options) result(status) ! initialize from existing topology
   use ISO_C_BINDING
   implicit none
   class(grid_with_halo), intent(INOUT) :: grid    ! grid with halo topology
-  type(grid_mpi_comm), intent(IN) :: grid_src
   integer, intent(IN) :: gnx, gny, maxhalox, maxhaloy
   integer, intent(IN) :: options
+  integer :: status
 
-  grid%grid_comm = grid_src%grid_comm
+  status = -1
+  if(gnx <= 0 .or. gny <= 0) return   ! inappropriate global grid dimensions
+!   grid%grid_comm = grid_src%grid_comm
 
-end subroutine rpn_mpi_distribute_grid_int
+  status = 0
+end function rpn_mpi_distribute_grid_int
 
-subroutine rpn_mpi_distribute_grid(grid, grid_src, gnx, gny, maxhalox, maxhaloy, options) ! initialize from existing topology
+function rpn_mpi_distribute_grid(grid, gnx, gny, maxhalox, maxhaloy, options) result(status) ! initialize from existing topology
   use ISO_C_BINDING
   implicit none
   class(grid_with_halo), intent(INOUT) :: grid    ! grid with halo topology
-  type(grid_mpi_comm), intent(IN) :: grid_src
   integer, intent(IN)           :: gnx, gny       ! global dimensions of grid
   integer, intent(IN), optional :: maxhalox, maxhaloy
   integer, intent(IN), optional :: options
+  integer :: status
 
   integer :: hxm, hym, opt
+
+  status = -1
+  if(.not. grid%valid() ) return      !  process topology not properly initialized
 
   hxm = HALO_MAX
   if(present(maxhalox)) hxm = maxhalox
@@ -223,9 +249,10 @@ subroutine rpn_mpi_distribute_grid(grid, grid_src, gnx, gny, maxhalox, maxhaloy,
   if(present(maxhaloy)) hym = maxhaloy
   opt = 0
   if(present(options))  opt = options
-  call rpn_mpi_distribute_grid_int(grid, grid_src, gnx, gny, hxm, hym, opt)
 
-end subroutine rpn_mpi_distribute_grid
+  status = rpn_mpi_distribute_grid_int(grid, gnx, gny, hxm, hym, opt)
+
+end function rpn_mpi_distribute_grid
 
 subroutine rpn_mpi_set_grid_topology_int(grid, gridcom, npex, npey, options)
   use ISO_C_BINDING
@@ -235,7 +262,6 @@ subroutine rpn_mpi_set_grid_topology_int(grid, gridcom, npex, npey, options)
   integer, intent(IN) :: npex, npey
   integer, intent(IN), optional :: options
   
-
 end subroutine rpn_mpi_set_grid_topology_int
 
 ! establish grip PE topology
@@ -275,18 +301,18 @@ function rpn_mpi_set_grid_topology(grid, gridcom, npex, npey, options) result(st
   call MPI_Comm_size(grid%grid_comm%comm, grid%grid_comm%size)  ! size of grid
   call MPI_Comm_rank(grid%grid_comm%comm, grid%grid_comm%rank)  ! rank -n grid
 
-  if(and(opt,GRID_Y_FIRST) == GRID_Y_FIRST) then                       ! Y first distribution
-    grid%my_row    = mod(grid%grid_comm%rank, npey)
-    grid%my_column = grid%grid_comm%rank / npey
-  else if(and(opt,GRID_BLOCKED) == GRID_BLOCKED) then                  ! block distribution (blkx,blky) (deferred implementation)
+  if(and(opt,GRID_BLOCKED) == GRID_BLOCKED) then                       ! block distribution (blkx,blky) (deferred implementation)
     grid%my_row    = grid%grid_comm%rank / npex                        ! (same as X first for now)
     grid%my_column = mod(grid%grid_comm%rank, npex)
     blkx = and(255, ishft(opt, -8) )                                   ! bits 8 - 15
     blky = and(255, opt            )                                   ! bits 0-   7 (lower 8 bits)
+  else if(and(opt,GRID_Y_FIRST) == GRID_Y_FIRST) then                  ! Y first distribution
+    grid%my_row    = mod(grid%grid_comm%rank, npey)
+    grid%my_column = grid%grid_comm%rank / npey
   else if(and(opt,GRID_X_FIRST) == GRID_X_FIRST) then                  ! X first distribution
     grid%my_row    = grid%grid_comm%rank / npex
     grid%my_column = mod(grid%grid_comm%rank, npex)
-  else                                                                 ! X first by default
+  else                                                                 ! X first if nothing is specifically requested
     grid%my_row    = grid%grid_comm%rank / npex
     grid%my_column = mod(grid%grid_comm%rank, npex)
   endif
