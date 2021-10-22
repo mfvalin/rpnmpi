@@ -223,7 +223,11 @@ function rpn_mpi_distribute_grid_int(grid, gnx, gny, maxhalox, maxhaloy, options
   integer :: status
 
   status = -1
-  if(gnx <= 0 .or. gny <= 0) return   ! inappropriate global grid dimensions
+  if(gnx <= 0 .or. gny <= 0) return          ! inappropriate global grid dimensions
+  if(maxhalox < 0 .or. maxhaloy < 0) return  ! inappropriate halo sizes
+
+  ! spread gnx over grid%row%size
+  ! spread gny over grid%column%size
 !   grid%grid_comm = grid_src%grid_comm
 
   status = 0
