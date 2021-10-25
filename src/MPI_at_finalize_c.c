@@ -30,6 +30,7 @@ static int used_fns = 0 ;
 #define MAXWINS 2048
 
 static MPI_Win winlist[MAXWINS] ;      // windows list
+static int     winrank[MAXWINS] ;      // ranks in window
 static int init = 1 ;                  // initialize flag
 static int used = 0 ;                  // number of registered windows in list
 
@@ -37,7 +38,8 @@ void MPI_Free_Tracked_Windows() ;
 void MPI_Track_Window_f(MPI_Fint win_f, int insert) ;
 void MPI_Track_Window(MPI_Win win, int insert) ;
 
-// register a function to be executed before MPI_Finalize
+// TODO: check for duplicates
+// register a function to be executed before calling MPI_Finalize
 int MPI_At_Finalize( void (*fn)(void) ){
   if(used_fns < MAXFNS){
     fn_list[used_fns] = fn ;           // store in function list if not full
@@ -49,6 +51,7 @@ int MPI_At_Finalize( void (*fn)(void) ){
 }
 
 // execute functions registered with MPI_At_Finalize (in reverse order of registration)
+// NOTE: redundant calls become effective NO-OPs
 void MPI_At_Finalize_exec(){
   while(used_fns > 0){
     used_fns-- ;
@@ -56,32 +59,37 @@ void MPI_At_Finalize_exec(){
   }
 }
 
-static void dummy1(){             // demo at finalize function
+static void dummy1(){             // demo at finalize function 1
   printf("dummy1 function\n");
 }
-static void dummy2(){             // demo at finalize function
+static void dummy2(){             // demo at finalize function 2
   printf("dummy2 function\n");
 }
-static void dummy3(){             // demo at finalize function
+static void dummy3(){             // demo at finalize function 3
   printf("dummy3 function\n");
 }
 
-int MPI_Init(int *argc, char ***argv){             // intercept MPI_Init call from user
+// intercept MPI_Init call from user
+int MPI_Init(int *argc, char ***argv){
   if(DEBUG) printf("MPI_Init C\n");
   MPI_At_Finalize(MPI_Free_Tracked_Windows) ;  // register function to auto free one sided windows not freed yet
-  if(DEBUG) MPI_At_Finalize(dummy1) ;
+  if(DEBUG) MPI_At_Finalize(dummy1) ;          // in DEBUG mode, register 3 dummy functions
   if(DEBUG) MPI_At_Finalize(dummy2) ;
   if(DEBUG) MPI_At_Finalize(dummy3) ;
   return PMPI_Init(argc, argv) ;
 }
 
-int MPI_Finalize(){                                // intercept MPI_Finalize call from user
+// intercept MPI_Finalize call from user
+int MPI_Finalize(){
   if(DEBUG) printf("MPI_finalize C\n");
   MPI_At_Finalize_exec() ;                         // execute registered functions
   return PMPI_Finalize() ;
 }
 
-void MPI_Track_Window(  // insert/remove C MPI window into/from tracked list
+// insert/remove C MPI window into/from tracked list
+// TODO: add rank tracking (so that message at end is printed only by rank 0)
+//       add rank << 1 to insert
+void MPI_Track_Window(
   MPI_Win win,              // MPI C one sided window
   int insert)               // 1 = insert, 0 = remove
 {
@@ -90,25 +98,27 @@ void MPI_Track_Window(  // insert/remove C MPI window into/from tracked list
     for(i = 0 ; i < MAXWINS ; i++) winlist[i] = MPI_WIN_NULL ;
     init = 0 ;
   }
-  if(DEBUG) printf("MPI_Track_Window, insert= %d, used = %d \n", insert, used);
-  if(insert){                                          // insert
+  if(DEBUG) printf("DEBUG: MPI_Track_Window, insert= %d, used = %d \n", insert, used);
+  if(insert & 1){                                          // insert
 
     for(i = 0 ; i < used ; i++){
       if(winlist[i] == win){                           // already in list
-      if(DEBUG) printf("entry %d is a duplicate\n",i);
+      if(DEBUG) printf("DEBUG: entry %d is a duplicate\n",i);
         return ;
       }
     }
     for(i = 0 ; i < used ; i++){
       if(winlist[i] == MPI_WIN_NULL){                  // resuse a free entry in list
         winlist[i] = win ;
-      if(DEBUG) printf("reusing entry %d\n", i);
+        winrank[i] = insert >> 1 ;                        // keep rank
+      if(DEBUG) printf("DEBUG: reusing entry %d\n", i);
         return ;
       }
     }
     if(used >= MAXWINS) return ;                       // table full, OUCH
     winlist[used] = win ;                              // add a new entry
-    if(DEBUG) printf("adding entry %d\n", used);
+    winrank[i] = insert >> 1 ;                            // keep rank
+    if(DEBUG) printf("DEBUG: adding entry %d\n", used);
     used++ ;
     return ;
 
@@ -117,6 +127,7 @@ void MPI_Track_Window(  // insert/remove C MPI window into/from tracked list
     for(i = 0 ; i < used ; i++){
       if(winlist[i] == win){                           // entry found in table, replace with null window
         winlist[i] = MPI_WIN_NULL ;
+        winrank[i] = 0 ;
         if(DEBUG) printf("removing entry %d\n", i);
         return ;
       }
@@ -125,26 +136,27 @@ void MPI_Track_Window(  // insert/remove C MPI window into/from tracked list
 
 }
 
-void MPI_Track_Window_f(MPI_Fint win_f, int insert){  // insert/remove Fortran MPI window into/from tracked list
-  MPI_Win win = MPI_Win_f2c(win_f) ;                      // translate Fortran MPI window into C window
+// insert/remove Fortran MPI window into/from tracked list
+void MPI_Track_Window_f(MPI_Fint win_f, int insert){
+  MPI_Win win = MPI_Win_f2c(win_f) ;                   // translate Fortran MPI window into C window
   MPI_Track_Window(win, insert) ;
-  if(DEBUG) printf("MPI_Track_Window_f used = %d, insert = %d \n", used, insert);
+  if(DEBUG) printf("DEBUG: (MPI_Track_Window_f) used = %d, insert = %d \n", used, insert);
 }
 
 // free all registered windows not freed yet
 void MPI_Free_Tracked_Windows(){
   int i, count ;
   count = 0 ;
-  if(DEBUG) printf("MPI_Free_Tracked_Windows : start\n");
+//   if(DEBUG) printf("MPI_Free_Tracked_Windows : start\n");
   if(used == 0) return ;
   for(i = 0 ; i < used ; i++){
     if(winlist[i] != MPI_WIN_NULL){                       // entry still valid
-      if(DEBUG) printf("MPI_Track_Window_f, freeing %d\n",i);
+      if(winrank[i] == 0) printf("INFO: (MPI_Track_Window_f) freeing (unclosed) window at index %d\n",i);
+      if(winrank[i] == 0) count++ ;
       PMPI_Win_free( &(winlist[i]) ) ;
       winlist[i] = MPI_WIN_NULL ;
-      count++ ;
     }
   }
   used = 0 ;
-  printf("MPI_Free_Tracked_Windows : freed %d windows\n", count) ;
+  if(count > 0) printf("INFO: (MPI_Free_Tracked_Windows) freed %d windows\n", count) ;
 }
